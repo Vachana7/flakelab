@@ -34,11 +34,16 @@ class Handler(BaseHTTPRequestHandler):
         if url.path != "/health" and random.random() < SLOW_PROBABILITY:
             time.sleep(SLOW_SECONDS)
         data = json.dumps(body).encode()
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(data)))
-        self.end_headers()
-        self.wfile.write(data)
+        try:
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+        except (BrokenPipeError, ConnectionResetError):
+            # Expected: this was a deliberately slow reply, and the client had
+            # already given up (its timeout is shorter). That is the planted flakiness.
+            print(f"slow reply to {url.path} arrived after the client's timeout (expected)")
 
     def log_message(self, fmt, *args):
         pass

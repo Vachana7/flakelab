@@ -1,0 +1,4 @@
+# Keep Linux line endings for files that run inside Linux containers, even when the
+# repository is cloned on Windows (otherwise "\r" breaks shell scripts and Dockerfiles).
+* text=auto eol=lf
+*.png binary

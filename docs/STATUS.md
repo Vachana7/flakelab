@@ -22,11 +22,11 @@ every work session. "Verified" means a command was actually run and its output c
 | **Docker runner on real Docker** | GitHub Actions run 43046637552 (ubuntu runner): `test_delivery_forecast` failed 3/3 with `--network none`, `test_export_catalog` 3/3 with `--memory 128m`, `test_authorize_within_sla` 3/3 with `--cpus 0.25`, `test_discount` 0/3 (stable control) |
 | FlakeLab image + Docker-out-of-Docker | same run: FlakeLab container drove the host Docker engine through the socket and wrote results |
 | CI quality job | ruff, format, mypy, 26 tests on Python 3.10 and 3.12 all green |
+| Image publishing to GHCR | run 43047113320 (attempt 2): `flakelab`, `flakelab-demo`, `flakelab-weather-api` pushed to ghcr.io/vachana7. Root cause of the first failure: images had no `org.opencontainers.image.source` label, so GITHUB_TOKEN could not create linked packages. After adding it, the first *creation* of the second package was still denied once and succeeded on re-run; this looks like a delay in GitHub linking a newly created package and should not recur now that the packages exist. Watch for it. |
 
 ### Written but NOT yet verified
 | What | Why not | Plan |
 |---|---|---|
-| Image publishing to GHCR | first attempt failed with "denied": images were not linked to the repository | added `org.opencontainers.image.source` label; re-run |
 | docker-compose stack end to end | needs a machine with Docker Desktop | Vivek's laptop |
 | PR comment, GitHub Pages deploy | needs a PR / Pages enabled | open a test PR; enable Pages (Settings -> Pages -> GitHub Actions) |
 

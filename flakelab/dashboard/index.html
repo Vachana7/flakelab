@@ -113,6 +113,23 @@
   .block h2 { font-size: 1.05rem; margin: 0 0 .5rem; }
   .block p, .block li { font-size: .92rem; max-width: 70ch; }
   .block ul { padding-left: 1.1rem; }
+  .block.wide { grid-column: 1 / -1; }
+  .dna { display: inline-flex; gap: 3px; align-items: flex-end; height: 34px; vertical-align: middle; }
+  .dna i { display: block; width: 14px; background: #C23A50; border-radius: 3px 3px 0 0;
+           min-height: 2px; position: relative; }
+  .dna i.zero { background: #CDD5DD; }
+  .dna-key { display: flex; gap: 3px; font-size: .62rem; color: var(--muted); margin-top: 2px; }
+  .dna-key span { width: 14px; text-align: center; }
+  .dna-cluster { border-top: 1px solid #EEF1F4; padding: .9rem 0; display: grid;
+                 grid-template-columns: auto 1fr; gap: .4rem 1.4rem; align-items: start; }
+  .dna-cluster:first-of-type { border-top: 0; }
+  .conf { font-size: .78rem; font-weight: 600; padding: .05rem .5rem; border-radius: 999px; }
+  .conf.high { background: #E1F1EE; color: #145A50; }
+  .conf.medium { background: #FBF1DA; color: #6B4A05; }
+  .conf.low { background: #EEF1F4; color: #5B6977; }
+  dl.env { display: grid; grid-template-columns: max-content 1fr; gap: .2rem 1rem; font-size: .88rem; margin: 0; }
+  dl.env dt { color: var(--muted); }
+  dl.env dd { margin: 0; word-break: break-all; }
   .big { font-size: 2.4rem; font-weight: 700; letter-spacing: -.03em; line-height: 1; }
   .summary-line { font-size: 1.05rem; line-height: 1.6; }
   .summary-line b { font-variant-numeric: tabular-nums; }
@@ -150,10 +167,12 @@
   </aside>
 
   <section class="below">
+    <div class="block wide" id="dna"></div>
     <div class="block" id="summary"></div>
     <div class="block" id="clusters"></div>
     <div class="block" id="evaluation"></div>
-    <div class="block">
+    <div class="block" id="environment"></div>
+    <div class="block wide">
       <h2>How to read this</h2>
       <p>Each condition changes one thing about the environment. FlakeLab runs the full test
         suite many times under each condition, in interleaved order, then compares failure
@@ -167,6 +186,8 @@
 
 <script>
 const ORDER = { supported_hypothesis: 0, always_failing: 1, unknown: 2, weak_signal: 3, stable: 4 };
+const SHORT = { cpu: "CPU / timing", memory: "Memory", network: "Network dependency",
+  order: "Test order", timezone: "Timezone" };
 const LEVEL_TEXT = { supported_hypothesis: "Supported hypothesis", unknown: "Unknown cause",
   weak_signal: "Weak signal", always_failing: "Always failing", stable: "Stable" };
 let selected = null, latest = null, timer = null;
@@ -238,7 +259,8 @@ function renderPlate(doc) {
     });
     const v = t.verdict;
     row.querySelector(".verdict").innerHTML =
-      `<span class="tag ${v.level}">${esc(v.level === "supported_hypothesis" ? v.title : LEVEL_TEXT[v.level])}</span>`;
+      `<span class="tag ${v.level}" title="${esc(v.title)}">${esc(v.level === "supported_hypothesis"
+        ? v.categories.map(c => SHORT[c] || c).join(" + ") : LEVEL_TEXT[v.level])}</span>`;
     row.classList.toggle("selected", t.nodeid === selected);
     frag.appendChild(row);
   });
@@ -274,11 +296,71 @@ function renderDetail(doc) {
       ${esc(r.note || "")}</p><pre id="cmd">${esc(r.command)}</pre>
       <button class="copy" id="copy">Copy command</button>`;
   }
-  if (t.cluster) html += `<h3>Cluster ${t.cluster}</h3><p>Fails together with other tests. See failure clusters below.</p>`;
+  html += `<h3>Failure DNA</h3>${dnaStrip(t.dna, doc.meta.conditions)}`;
+  if (t.dna_cluster) html += `<p>Shares its DNA with other tests (DNA cluster ${t.dna_cluster}).</p>`;
+  if (t.cluster) html += `<p>Fails in the same runs as other tests (co-failure group ${t.cluster}).</p>`;
+  const cap = (doc.meta.capsules || []).find(c => c.test === t.nodeid);
+  if (cap) html += `<h3>Reproduction capsule</h3><p>Everything needed to re-create this failure:
+    exact test order, Docker settings, image and package versions.</p>
+    <p><a href="${esc(cap.path)}/README.md">README</a>, <a href="${esc(cap.path)}/capsule.json">capsule.json</a>
+    , <a href="${esc(cap.path)}/reproduce.sh">reproduce.sh</a>, <a href="${esc(cap.path)}/reproduce.ps1">reproduce.ps1</a></p>
+    <pre>flakelab capsule verify ${esc(cap.path)}</pre>`;
   box.innerHTML = html;
   const btn = document.getElementById("copy");
   if (btn) btn.onclick = () => navigator.clipboard.writeText(r.command)
     .then(() => { btn.textContent = "Copied"; setTimeout(() => btn.textContent = "Copy command", 1500); });
+}
+
+function dnaStrip(sig, conds) {
+  if (!sig) return "";
+  const short = { baseline: "B", cpu_low: "C", memory_low: "M", no_network: "N",
+                  reverse_order: "R", shuffled_order: "S", timezone_ist: "T" };
+  const bars = sig.map((r, i) => `<i class="${r ? "" : "zero"}" style="height:${Math.max(2, r * 34)}px"
+      title="${esc(conds[i].label)}: ${pct(r)} failed"></i>`).join("");
+  const keys = conds.map(c => `<span title="${esc(c.label)}">${short[c.name] || c.name[0].toUpperCase()}</span>`).join("");
+  return `<div><span class="dna" aria-label="failure rate per condition">${bars}</span><div class="dna-key">${keys}</div></div>`;
+}
+
+function renderDNA(doc) {
+  const box = document.getElementById("dna");
+  const dna = doc.dna || { clusters: [] };
+  const conds = doc.meta.conditions;
+  let html = `<h2>Failure DNA</h2><p>A test's DNA is its failure rate under each condition
+    (bar height). Tests with matching DNA react to the same conditions, which suggests the
+    same kind of weakness. Letters: ${conds.map(c => esc(c.label)).join(", ")}.</p>`;
+  if (!dna.clusters.length) {
+    box.innerHTML = html + `<p>No shared DNA yet. Groups appear when two or more unreliable tests react alike.</p>`;
+    return;
+  }
+  html += dna.clusters.map(c => `<div class="dna-cluster">
+      ${dnaStrip(c.signature, conds)}
+      <div><b>DNA cluster ${c.id}</b>, ${c.size} tests <span class="conf ${c.confidence}">${c.confidence} confidence</span>
+        <p style="margin:.3rem 0">${c.tests.map(n => `<code>${esc(n.split("::").pop())}</code>`).join(", ")}</p>
+        <p style="margin:.3rem 0">${esc(c.interpretation)}</p>
+        <p class="caveat" style="margin:.3rem 0">Common significant conditions: ${c.common_conditions.length ? esc(c.common_conditions.join(", ")) : "none"}.
+          Largest difference inside the cluster: ${pct(c.spread)}. Fail in the same runs: ${c.co_failure_similarity == null ? "n/a" : pct(c.co_failure_similarity)}.
+          ${c.shared_file ? `All in <code>${esc(c.shared_file)}</code>.` : ""}</p>
+      </div></div>`).join("");
+  const q = dna.quality;
+  if (q && q.adjusted_rand_index != null) html += `<p class="caveat">Agreement with planted causes
+    (Adjusted Rand Index): ${q.adjusted_rand_index.toFixed(2)} over ${q.tests_scored} tests.</p>`;
+  box.innerHTML = html + `<p class="caveat">${esc(dna.clusters[0].limitations)}</p>`;
+}
+
+function renderEnvironment(doc) {
+  const e = doc.meta.environment || {}, tm = doc.meta.timing || {};
+  const img = e.image || {}, proj = e.project || {}, host = e.host || {};
+  const rows = [
+    ["Image", img.reference], ["Image id", img.id ? img.id.slice(0, 19) : null],
+    ["Revision", e.repository_revision ? e.repository_revision.slice(0, 12) : null],
+    ["Python", proj.python], ["OS", proj.os],
+    ["Host", host.cpus ? `${host.cpus} CPUs, ${(host.memory_bytes / 2 ** 30).toFixed(1)} GB, Docker ${host.docker_version}` : (host.platform || null)],
+    ["Mean run", tm.mean_run_seconds != null ? `${tm.mean_run_seconds} s (${tm.mean_pytest_seconds} s in pytest)` : null],
+    ["Overhead", tm.mean_overhead_seconds != null ? `${tm.mean_overhead_seconds} s per run` : null],
+  ].filter(r => r[1]);
+  document.getElementById("environment").innerHTML = `<h2>Environment</h2>` + (rows.length
+    ? `<dl class="env">${rows.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl>`
+    : `<p>Recorded when the experiment starts.</p>`);
 }
 
 function renderBelow(doc) {
@@ -290,8 +372,8 @@ function renderBelow(doc) {
     <b>${s.unknown}</b> is unknown${s.weak_signals ? `, and <b>${s.weak_signals}</b> need more runs` : ""}.</p>`;
 
   const cl = doc.clusters || [];
-  document.getElementById("clusters").innerHTML = `<h2>Failure clusters</h2>` + (cl.length
-    ? `<p>Tests that fail in the same runs probably share one cause, so one fix can repair all of them.</p><ul>` +
+  document.getElementById("clusters").innerHTML = `<h2>Co-failure groups</h2>` + (cl.length
+    ? `<p>Tests that fail in the same runs may share one runtime cause, such as one slow service.</p><ul>` +
       cl.map(c => `<li><b>Cluster ${c.id}</b>: ${c.tests.map(n => `<code>${esc(n.split("::").pop())}</code>`).join(", ")}
         (${pct(c.similarity)} co-failure similarity). ${esc(c.shared_title)}.</li>`).join("") + `</ul>`
     : `<p>No clusters yet. Clusters appear when two or more tests fail in the same runs.</p>`);
@@ -303,6 +385,8 @@ function renderBelow(doc) {
       <p><span class="big">${ev.correct}/${ev.scored}</span><br>diagnoses matched the cause planted in the demo tests.</p>
       <p>Of ${ev.problem_tests} problem tests, ${ev.visible_to_baseline_reruns} ever failed in plain
       baseline reruns. FlakeLab flagged ${ev.found_by_flakelab}.</p>
+      <p>False positives on stable tests: ${ev.false_positives ?? 0}/${ev.stable_tests ?? 0}.
+      Inconclusive on environment-caused tests: ${ev.inconclusive ?? 0}/${ev.environmental_tests ?? 0}.</p>
       <p class="caveat">Known causes only exist for designed fixtures, so this checks the tool works as
       intended. It is not a measure of real-world accuracy.</p>`;
   } else {
@@ -327,6 +411,7 @@ async function poll() {
       if (first && first.verdict.level !== "stable") selected = first.nodeid;
     }
     renderHeader(doc); renderPlate(doc); renderDetail(doc); renderBelow(doc);
+    renderDNA(doc); renderEnvironment(doc);
     if (doc.meta.status === "done") return;  // stop polling when finished
   } catch (e) {
     if (location.protocol === "file:") {

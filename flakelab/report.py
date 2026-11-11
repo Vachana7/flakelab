@@ -114,7 +114,7 @@ def _clusters(doc: dict) -> list[str]:
     if not doc.get("clusters"):
         return []
     lines = [
-        "## Failure clusters",
+        "## Co-failure groups",
         "",
         (
             "Tests that fail in the same runs probably share a cause. "
@@ -129,6 +129,40 @@ def _clusters(doc: dict) -> list[str]:
             f"similarity): {names}. Shared signature: {c['shared_title']}."
         )
     lines.append("")
+    return lines
+
+
+def _dna(doc: dict) -> list[str]:
+    clusters = (doc.get("dna") or {}).get("clusters") or []
+    if not clusters:
+        return []
+    lines = [
+        "## Failure DNA",
+        "",
+        (
+            "Tests whose failure rates react to the same conditions. A shared signature "
+            "suggests the same kind of weakness, not proof of one root cause."
+        ),
+        "",
+    ]
+    for c in clusters:
+        names = ", ".join(f"`{n.split('::')[-1]}`" for n in c["tests"])
+        common = ", ".join(c["common_conditions"]) or "none"
+        lines.append(
+            f"- **DNA cluster {c['id']}** ({c['size']} tests, {c['confidence']} confidence): "
+            f"{names}. Common significant conditions: {common}. {c['interpretation']}"
+        )
+    lines.append("")
+    return lines
+
+
+def _capsules(doc: dict) -> list[str]:
+    capsules = doc["meta"].get("capsules") or []
+    if not capsules:
+        return []
+    lines = ["## Reproduction capsules", ""]
+    lines += [f"- `{c['test']}` → `{c['path']}`" for c in capsules]
+    lines += ["", "Verify one with `flakelab capsule verify <path>`.", ""]
     return lines
 
 
@@ -161,7 +195,7 @@ def render_markdown(doc: dict) -> str:
         lines += ["## Findings", ""]
         for t in problems:
             lines += _finding(t)
-    lines += _clusters(doc) + _evaluation(doc)
+    lines += _dna(doc) + _clusters(doc) + _capsules(doc) + _evaluation(doc)
     skipped = doc["meta"].get("skipped_conditions")
     if skipped:
         names = ", ".join(f"{s['label']} ({s['reason']})" for s in skipped)

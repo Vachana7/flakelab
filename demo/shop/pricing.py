@@ -1,4 +1,7 @@
-"""Pricing rules. No planted problems: these tests should stay stable."""
+"""Pricing rules. No planted problems: these tests should stay stable.
+
+GST is applied after discounts, matching how Indian invoices are usually computed.
+"""
 
 
 def apply_discount(price: float, percent: float) -> float:

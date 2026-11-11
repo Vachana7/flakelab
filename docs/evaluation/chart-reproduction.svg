@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 748" font-family="Segoe UI, system-ui, sans-serif" font-size="12" role="img" aria-label="Failure rate: plain reruns vs the condition FlakeLab identified">
+<rect width="760" height="748" fill="#fff"/>
+<text x="16" y="24" font-size="15" font-weight="600" fill="#17212B">Failure rate: plain reruns vs the condition FlakeLab identified</text>
+<rect x="250" y="34" width="10" height="10" rx="2" fill="#1F8A7A"/>
+<text x="264" y="43" fill="#5B6977">Under FlakeLab&#x27;s condition</text>
+<rect x="470" y="34" width="10" height="10" rx="2" fill="#8A97A6"/>
+<text x="484" y="43" fill="#5B6977">Plain reruns</text>
+<text x="242" y="70" text-anchor="end" fill="#17212B">test_cpu_strong</text>
+<rect x="250" y="56" width="440.0" height="14" rx="2" fill="#1F8A7A"><title>Under FlakeLab&#x27;s condition: 1.0</title></rect>
+<text x="696.0" y="67" fill="#5B6977">100%</text>
+<rect x="250" y="73" width="1.5" height="14" rx="2" fill="#8A97A6"><title>Plain reruns: 0.0</title></rect>
+<text x="257.5" y="84" fill="#5B6977">0%</text>
+<text x="242" y="118" text-anchor="end" fill="#17212B">test_cpu_medium</text>
+<rect x="250" y="104" width="242.0" height="14" rx="2" fill="#1F8A7A"><title>Under FlakeLab&#x27;s condition: 0.55</title></rect>
+<text x="498.0" y="115" fill="#5B6977">55%</text>
+<rect x="250" y="121" width="1.5" height="14" rx="2" fill="#8A97A6"><title>Plain reruns: 0.0</title></rect>
+<text x="257.5" y="132" fill="#5B6977">0%</text>
+<text x="242" y="166" text-anchor="end" fill="#17212B">test_cpu_marginal</text>
+<rect x="250" y="152" width="0.0" height="14" rx="2" fill="#1F8A7A"><title>Under FlakeLab&#x27;s condition: None</title></rect>
+<text x="256.0" y="163" fill="#5B6977">n/a</text>
+<rect x="250" y="169" width="1.5" height="14" rx="2" fill="#8A97A6"><title>Plain reruns: 0.0</title></rect>
+<text x="257.5" y="180" fill="#5B6977">0%</text>
+<text x="242" y="214" text-anchor="end" fill="#17212B">test_memory_200mb</text>
+<rect x="250" y="200" width="440.0" height="14" rx="2" fill="#1F8A7A"><title>Under FlakeLab&#x27;s condition: 1.0</title></rect>
+<text x="696.0" y="211" fill="#5B6977">100%</text>
+<rect x="250" y="217" width="1.5" height="14" rx="2" fill="#8A97A6"><title>Plain reruns: 0.0</title></rect>
+<text x="257.5" y="228" fill="#5B6977">0%</text>
+<text x="242" y="262" text-anchor="end" fill="#17212B">test_memory_160mb</text>
+<rect x="250" y="248" width="440.0" height="14" rx="2" fill="#1F8A7A"><title>Under FlakeLab&#x27;s condition: 1.0</title></rect>
+<text x="696.0" y="259" fill="#5B6977">100%</text>
+<rect x="250" y="265" width="1.5" height="14" rx="2" fill="#8A97A6"><title>Plain reruns: 0.0</title></rect>
+<text x="257.5" y="276" fill="#5B6977">0%</text>
+<text x="242" y="310" text-anchor="end" fill="#17212B">test_network_forecast</text>
+<rect x="250" y="296" width="440.0" height="14" rx="2" fill="#1F8A7A"><title>Under FlakeLab&#x27;s condition: 1.0</title></rect>
+<text x="696.0" y="307" fill="#5B6977">100%</text>
+<rect x="250" y="313" width="25.1" height="14" rx="2" fill="#8A97A6"><title>Plain reruns: 0.05714285714285714</title></rect>
+<text x="281.1" y="324" fill="#5B6977">6%</text>
+<text x="242" y="358" text-anchor="end" fill="#17212B">test_network_alerts</text>
+<rect x="250" y="344" width="440.0" height="14" rx="2" fill="#1F8A7A"><title>Under FlakeLab&#x27;s condition: 1.0</title></rect>
+<text x="696.0" y="355" fill="#5B6977">100%</text>
+<rect x="250" y="361" width="53.4" height="14" rx="2" fill="#8A97A6"><title>Plain reruns: 0.12142857142857143</title></rect>
+<text x="309.4" y="372" fill="#5B6977">12%</text>
+<text x="242" y="406" text-anchor="end" fill="#17212B">test_network_health</text>
+<rect x="250" y="392" width="440.0" height="14" rx="2" fill="#1F8A7A"><title>Under FlakeLab&#x27;s condition: 1.0</title></rect>
+<text x="696.0" y="403" fill="#5B6977">100%</text>
+<rect x="250" y="409" width="1.5" height="14" rx="2" fill="#8A97A6"><title>Plain reruns: 0.0</title></rect>
+<text x="257.5" y="420" fill="#5B6977">0%</text>
+<text x="242" y="454" text-anchor="end" fill="#17212B">test_order_brittle_reserve</text>
+<rect x="250" y="440" width="440.0" height="14" rx="2" fill="#1F8A7A"><title>Under FlakeLab&#x27;s condition: 1.0</title></rect>
+<text x="696.0" y="451" fill="#5B6977">100%</text>
+<rect x="250" y="457" width="1.5" height="14" rx="2" fill="#8A97A6"><title>Plain reruns: 0.0</title></rect>
+<text x="257.5" y="468" fill="#5B6977">0%</text>
+<text x="242" y="502" text-anchor="end" fill="#17212B">test_order_brittle_report</text>
+<rect x="250" y="488" width="440.0" height="14" rx="2" fill="#1F8A7A"><title>Under FlakeLab&#x27;s condition: 1.0</title></rect>
+<text x="696.0" y="499" fill="#5B6977">100%</text>
+<rect x="250" y="505" width="1.5" height="14" rx="2" fill="#8A97A6"><title>Plain reruns: 0.0</title></rect>
+<text x="257.5" y="516" fill="#5B6977">0%</text>
+<text x="242" y="550" text-anchor="end" fill="#17212B">test_order_victim_currency</text>
+<rect x="250" y="536" width="440.0" height="14" rx="2" fill="#1F8A7A"><title>Under FlakeLab&#x27;s condition: 1.0</title></rect>
+<text x="696.0" y="547" fill="#5B6977">100%</text>
+<rect x="250" y="553" width="1.5" height="14" rx="2" fill="#8A97A6"><title>Plain reruns: 0.0</title></rect>
+<text x="257.5" y="564" fill="#5B6977">0%</text>
+<text x="242" y="598" text-anchor="end" fill="#17212B">test_timezone_report_title</text>
+<rect x="250" y="584" width="440.0" height="14" rx="2" fill="#1F8A7A"><title>Under FlakeLab&#x27;s condition: 1.0</title></rect>
+<text x="696.0" y="595" fill="#5B6977">100%</text>
+<rect x="250" y="601" width="1.5" height="14" rx="2" fill="#8A97A6"><title>Plain reruns: 0.0</title></rect>
+<text x="257.5" y="612" fill="#5B6977">0%</text>
+<text x="242" y="646" text-anchor="end" fill="#17212B">test_timezone_date_boundary</text>
+<rect x="250" y="632" width="440.0" height="14" rx="2" fill="#1F8A7A"><title>Under FlakeLab&#x27;s condition: 1.0</title></rect>
+<text x="696.0" y="643" fill="#5B6977">100%</text>
+<rect x="250" y="649" width="1.5" height="14" rx="2" fill="#8A97A6"><title>Plain reruns: 0.0</title></rect>
+<text x="257.5" y="660" fill="#5B6977">0%</text>
+<text x="242" y="694" text-anchor="end" fill="#17212B">test_multi_network_and_timezone</text>
+<rect x="250" y="680" width="440.0" height="14" rx="2" fill="#1F8A7A"><title>Under FlakeLab&#x27;s condition: 1.0</title></rect>
+<text x="696.0" y="691" fill="#5B6977">100%</text>
+<rect x="250" y="697" width="1.5" height="14" rx="2" fill="#8A97A6"><title>Plain reruns: 0.0</title></rect>
+<text x="257.5" y="708" fill="#5B6977">0%</text>
+</svg>

@@ -60,9 +60,13 @@ jobs:
           docker run --rm flakelab:ci --version
           docker run --rm flakelab-demo:ci python -m pytest -q tests/test_pricing.py
       - name: Start the fake weather service
+        # SLOW_PROBABILITY=0: CI checks must be deterministic. With the demo's random
+        # slowness on, baseline failures sometimes made the network capsule step
+        # statistically inconclusive, so the CI check for flaky tests was itself flaky.
         run: |
           docker network create flakelab-net
-          docker run -d --name weather-api --network flakelab-net flakelab-weather-api:ci
+          docker run -d --name weather-api --network flakelab-net \
+            -e SLOW_PROBABILITY=0 flakelab-weather-api:ci
       - name: Docker integration test (CPU, memory and network conditions)
         run: |
           pip install .
@@ -79,6 +83,8 @@ jobs:
             --out capsule-results --project "CI capsules"
           ls capsule-results/capsules
           cap=capsule-results/capsules
+          # The network capsule must target the network condition, not a baseline replay.
+          grep -q '"name": "no_network"' "$cap/tests_test_weather.py__test_delivery_forecast/capsule.json"
           # One-shot replay with the generated script must show the failure.
           bash "$cap/tests_test_reports.py__test_report_title/reproduce.sh" > replay.txt || true
           grep -q "FAILED tests/test_reports.py::test_report_title" replay.txt

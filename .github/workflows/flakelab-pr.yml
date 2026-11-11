@@ -1,0 +1,66 @@
+# Short FlakeLab experiment on pull requests that change code or tests.
+# Kept small on purpose (5 runs per condition, about 5 minutes) so CI cost stays
+# predictable. The full experiment lives in flakelab-extended.yml.
+#
+# Security: this uses the "pull_request" trigger, never "pull_request_target".
+# pull_request_target runs with write permissions on code from forks, which is
+# exactly how several 2025-2026 GitHub Actions supply-chain attacks worked.
+name: FlakeLab (pull request)
+
+on:
+  pull_request:
+    paths:
+      - "flakelab/**"
+      - "demo/**"
+      - ".github/workflows/flakelab-pr.yml"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: flakelab-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  experiment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install FlakeLab
+        run: pip install .
+      - name: Build the project under test and its fake weather service
+        run: |
+          docker build -t flakelab-demo:pr ./demo
+          docker build -t flakelab-weather-api:pr ./demo/weather_api
+          docker network create flakelab-net
+          docker run -d --name weather-api --network flakelab-net flakelab-weather-api:pr
+      - name: Run the experiment
+        run: |
+          flakelab run --runner docker --image flakelab-demo:pr \
+            --docker-network flakelab-net --runs 5 \
+            --expected demo/flakelab-expected.json \
+            --out flakelab-results --project "PR #${{ github.event.pull_request.number }}"
+      - name: Add the report to the job summary
+        if: always()
+        run: cat flakelab-results/report.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Comment on the pull request
+        # Fork PRs get a read-only token, so only comment on PRs from this repository.
+        if: always() && github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr comment ${{ github.event.pull_request.number }} \
+            --body-file flakelab-results/report.md --edit-last \
+          || gh pr comment ${{ github.event.pull_request.number }} \
+            --body-file flakelab-results/report.md
+      - name: Upload results and dashboard
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flakelab-results
+          path: flakelab-results/

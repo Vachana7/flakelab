@@ -1,0 +1,61 @@
+# One command runs the whole demo:
+#
+#   docker compose up --build
+#
+# then open http://localhost:8080 and watch the experiment fill in.
+# Use fewer runs for a quick demo:  FLAKELAB_RUNS=5 docker compose up --build
+name: flakelab
+
+services:
+  # Fake external weather service used by the demo shop's tests.
+  weather-api:
+    build: ./demo/weather_api
+    image: flakelab-weather-api:latest
+    networks: [flakelab-net]
+
+  # Builds the image that FlakeLab experiments on (the demo shop + its tests),
+  # prints a line and exits. FlakeLab starts its own containers from this image.
+  demo-image:
+    build: ./demo
+    image: flakelab-demo:latest
+    command: ["python", "-c", "print('demo image ready')"]
+
+  # Runs the experiment and writes results into the shared "results" volume.
+  flakelab:
+    build: .
+    image: flakelab:latest
+    depends_on:
+      demo-image:
+        condition: service_completed_successfully
+      weather-api:
+        condition: service_healthy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - results:/results
+      - ./demo/flakelab-expected.json:/expected.json:ro
+    command:
+      - run
+      - --runner=docker
+      - --image=flakelab-demo:latest
+      - --docker-network=flakelab-net
+      - --runs=${FLAKELAB_RUNS:-10}
+      - --out=/results
+      - --expected=/expected.json
+      - --project=ShopLite demo
+
+  # Serves the live dashboard from the same results volume.
+  dashboard:
+    build: .
+    image: flakelab:latest
+    command: ["serve", "--dir", "/results", "--port", "8080"]
+    ports:
+      - "8080:8080"
+    volumes:
+      - results:/results
+
+networks:
+  flakelab-net:
+    name: flakelab-net
+
+volumes:
+  results:

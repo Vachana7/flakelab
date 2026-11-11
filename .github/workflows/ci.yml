@@ -101,11 +101,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and push to GitHub Container Registry
+        # The source label links each image to this repository. Without it, a
+        # workflow's GITHUB_TOKEN is not allowed to create the package ("denied").
         run: |
           owner="${GITHUB_REPOSITORY_OWNER,,}"   # registry names must be lowercase
+          source="https://github.com/${GITHUB_REPOSITORY}"
           for pair in "flakelab:." "flakelab-demo:./demo" "flakelab-weather-api:./demo/weather_api"; do
             name="${pair%%:*}"; context="${pair#*:}"
             image="ghcr.io/${owner}/${name}"
-            docker build -t "${image}:latest" -t "${image}:${GITHUB_SHA::7}" "${context}"
+            docker build --label "org.opencontainers.image.source=${source}" \
+              --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+              -t "${image}:latest" -t "${image}:${GITHUB_SHA::7}" "${context}"
             docker push --all-tags "${image}"
           done

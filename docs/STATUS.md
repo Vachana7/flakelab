@@ -19,15 +19,22 @@ every work session. "Verified" means a command was actually run and its output c
 | docker-compose file is valid | `docker compose config -q` |
 | Workflow files are valid YAML | parsed with PyYAML |
 
+| **Docker runner on real Docker** | GitHub Actions run 43046637552 (ubuntu runner): `test_delivery_forecast` failed 3/3 with `--network none`, `test_export_catalog` 3/3 with `--memory 128m`, `test_authorize_within_sla` 3/3 with `--cpus 0.25`, `test_discount` 0/3 (stable control) |
+| FlakeLab image + Docker-out-of-Docker | same run: FlakeLab container drove the host Docker engine through the socket and wrote results |
+| CI quality job | ruff, format, mypy, 26 tests on Python 3.10 and 3.12 all green |
+
 ### Written but NOT yet verified
 | What | Why not | Plan |
 |---|---|---|
-| Docker runner (CPU / memory / network conditions) | no Docker daemon in the development sandbox | first real run in GitHub Actions (`ci.yml` integration step), then Vivek's laptop |
-| FlakeLab image + compose stack | same | same |
-| PR comment, GitHub Pages deploy | needs the GitHub repository | after repo is created |
+| Image publishing to GHCR | first attempt failed with "denied": images were not linked to the repository | added `org.opencontainers.image.source` label; re-run |
+| docker-compose stack end to end | needs a machine with Docker Desktop | Vivek's laptop |
+| PR comment, GitHub Pages deploy | needs a PR / Pages enabled | open a test PR; enable Pages (Settings -> Pages -> GitHub Actions) |
 
 ### Blockers
-- **GitHub repository needed** (owner: Vivek). Create an empty public repo named `flakelab`.
+- None. Repository live at https://github.com/Vachana7/flakelab
+
+### Notes
+- GitHub warns that actions/checkout@v4 and setup-python@v5 target Node 20 (forced onto Node 24). Works today; upgrade the action versions in a later pass.
 
 ### Outstanding (in priority order)
 1. Real Docker verification (CI + laptop), fix whatever breaks.

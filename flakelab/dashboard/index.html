@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FlakeLab</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%2713%27 fill=%27%231F8A7A%27/%3E%3Cpath d=%27M16 3a13 13 0 0 1 11.3 19.5L16 16z%27 fill=%27%23C23A50%27/%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%276%27 fill=%27white%27/%3E%3C/svg%3E">
+<style>
+  /* Design idea: an assay plate. Every test x condition is a "well" that fills
+     with colour as runs finish: teal for passes, crimson for failures. */
+  @property --fail { syntax: '<percentage>'; inherits: false; initial-value: 0%; }
+  @property --done { syntax: '<percentage>'; inherits: false; initial-value: 0%; }
+
+  :root {
+    --bench: #E9EDF1;
+    --panel: #FFFFFF;
+    --ink: #17212B;
+    --muted: #5B6977;
+    --line: #CDD5DD;
+    --pass: #1F8A7A;
+    --fail: #C23A50;
+    --signal: #B9800F;
+    --empty: #F4F6F8;
+    --ui: "Segoe UI Variable Text", "Segoe UI", "Avenir Next", system-ui, sans-serif;
+    --code: "Cascadia Code", "SF Mono", ui-monospace, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--bench); color: var(--ink); font: 16px/1.5 var(--ui); }
+  body { margin: 0; }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+  .top { display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem 2rem;
+         padding: 1.5rem clamp(1rem, 4vw, 3rem) 1rem; }
+  .brand { font-size: 1.05rem; font-weight: 700; letter-spacing: -.01em; margin: 0; }
+  .brand span { font-weight: 400; color: var(--muted); }
+  .status { flex: 1 1 22rem; margin: 0; font-size: clamp(1.4rem, 2.6vw, 2.1rem);
+            font-weight: 600; letter-spacing: -.02em; line-height: 1.2; }
+  .status small { display: block; font-size: .95rem; font-weight: 400; color: var(--muted);
+                  letter-spacing: 0; margin-top: .25rem; }
+  .progress { flex-basis: 100%; height: 6px; background: var(--line); border-radius: 3px;
+              overflow: hidden; }
+  .progress i { display: block; height: 100%; width: 0; background: var(--ink);
+                transition: width .6s ease; }
+
+  main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(18rem, 27rem);
+         gap: 1.5rem; padding: 0 clamp(1rem, 4vw, 3rem) 3rem; align-items: start; }
+  @media (max-width: 980px) { main { grid-template-columns: 1fr; } }
+
+  .plate { background: var(--panel); border: 1px solid var(--line); border-radius: 18px;
+           padding: 1.25rem 1.25rem .75rem; overflow-x: auto; }
+  table { border-collapse: separate; border-spacing: 0; width: 100%; }
+  th { font-weight: 600; font-size: .8rem; color: var(--muted); text-align: center;
+       padding: 0 .3rem .6rem; vertical-align: bottom; line-height: 1.2; }
+  th.test, td.test { text-align: left; }
+  th.verdict, td.verdict { text-align: left; padding-left: 1rem; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover td, tbody tr.selected td { background: #F1F4F7; }
+  tbody tr.selected td.test { box-shadow: inset 4px 0 0 var(--ink); }
+  td { padding: .35rem .3rem; border-top: 1px solid #EEF1F4; text-align: center; }
+  td.test { font-family: var(--code); font-size: .82rem; white-space: nowrap; padding-left: .6rem; }
+  td.test .file { display: block; color: var(--muted); font-size: .72rem; }
+  td.verdict { font-size: .85rem; min-width: 11rem; }
+
+  .well { --fail: 0%; --done: 0%; width: 2.1rem; height: 2.1rem; border-radius: 50%;
+          margin: auto; position: relative;
+          /* Custom properties can't be used as colours inside a registered
+             property transition reliably, so the colours are written out. */
+          background: conic-gradient(#C23A50 0 var(--fail), #1F8A7A var(--fail) var(--done),
+                                     #F4F6F8 var(--done) 100%);
+          box-shadow: inset 0 0 0 1px rgba(23,33,43,.12);
+          transition: --fail .7s ease, --done .7s ease; }
+  .well::after { content: ""; position: absolute; inset: 28%; border-radius: 50%;
+                 background: var(--panel); }
+  .well.sig { box-shadow: 0 0 0 3px var(--panel), 0 0 0 5px var(--ink); }
+  .well.weak { box-shadow: 0 0 0 3px var(--panel), 0 0 0 5px var(--signal); }
+  .count { display: block; font-size: .68rem; color: var(--muted); margin-top: .15rem;
+           font-variant-numeric: tabular-nums; }
+
+  .tag { display: inline-block; padding: .1rem .55rem; border-radius: 999px;
+         font-size: .8rem; font-weight: 600; white-space: nowrap; }
+  .tag.supported_hypothesis { background: #17212B; color: #fff; }
+  .tag.unknown { background: #F6E7C8; color: #6B4A05; }
+  .tag.weak_signal { background: #FBF1DA; color: #6B4A05; }
+  .tag.always_failing { background: #F7D9DE; color: #7D1427; }
+  .tag.stable { background: #E1F1EE; color: #145A50; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: .4rem 1.4rem; font-size: .8rem;
+            color: var(--muted); margin: .9rem 0 .2rem; }
+  .legend span { display: inline-flex; align-items: center; gap: .4rem; }
+  .legend i { width: .9rem; height: .9rem; border-radius: 50%; display: inline-block; }
+
+  aside { position: sticky; top: 1rem; background: var(--panel); border: 1px solid var(--line);
+          border-radius: 18px; padding: 1.4rem; }
+  aside h2 { font-family: var(--code); font-size: 1rem; margin: 0 0 .2rem; word-break: break-all; }
+  aside .file { color: var(--muted); font-size: .85rem; margin: 0 0 1rem; word-break: break-all; }
+  aside h3 { font-size: .95rem; margin: 1.2rem 0 .3rem; }
+  aside p, aside li { font-size: .92rem; margin: .3rem 0; }
+  aside ul { padding-left: 1.1rem; margin: .3rem 0; }
+  .caveat { color: var(--muted); font-size: .82rem !important; }
+  .hidden-note { background: #FBF1DA; border-radius: 10px; padding: .6rem .8rem;
+                 font-size: .88rem; margin: .8rem 0; }
+  pre { background: #17212B; color: #E8EEF3; border-radius: 10px; padding: .8rem;
+        font: .78rem/1.5 var(--code); white-space: pre-wrap; word-break: break-all; margin: .4rem 0; }
+  .copy { border: 1px solid var(--line); background: var(--panel); border-radius: 8px;
+          padding: .25rem .7rem; font-size: .82rem; cursor: pointer; }
+  .placeholder { color: var(--muted); }
+
+  section.below { grid-column: 1 / -1; display: grid; gap: 1.5rem;
+                  grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); }
+  .block { background: var(--panel); border: 1px solid var(--line); border-radius: 18px;
+           padding: 1.3rem 1.4rem; }
+  .block h2 { font-size: 1.05rem; margin: 0 0 .5rem; }
+  .block p, .block li { font-size: .92rem; max-width: 70ch; }
+  .block ul { padding-left: 1.1rem; }
+  .big { font-size: 2.4rem; font-weight: 700; letter-spacing: -.03em; line-height: 1; }
+  .summary-line { font-size: 1.05rem; line-height: 1.6; }
+  .summary-line b { font-variant-numeric: tabular-nums; }
+  .error { margin: 3rem auto; max-width: 40rem; background: var(--panel); padding: 1.5rem;
+           border-radius: 18px; border: 1px solid var(--line); }
+  @media (prefers-reduced-motion: reduce) {
+    .well, .progress i { transition: none; }
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <p class="brand">FlakeLab <span id="project"></span></p>
+  <h1 class="status" id="status">Waiting for results…<small id="substatus"></small></h1>
+  <div class="progress" aria-hidden="true"><i id="bar"></i></div>
+</header>
+
+<main id="app">
+  <div class="plate">
+    <table aria-label="Failures per test and condition">
+      <thead id="thead"></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="legend">
+      <span><i style="background:#1F8A7A"></i>passed runs</span>
+      <span><i style="background:#C23A50"></i>failed runs</span>
+      <span><i style="background:#F4F6F8;box-shadow:inset 0 0 0 1px #CDD5DD"></i>not run yet</span>
+      <span><i style="box-shadow:0 0 0 2px #17212B"></i>significant difference from baseline</span>
+      <span><i style="box-shadow:0 0 0 2px #B9800F"></i>weak signal</span>
+    </div>
+  </div>
+
+  <aside id="detail" aria-live="polite">
+    <p class="placeholder">Select a test to see what FlakeLab measured, what it suggests and how to reproduce it.</p>
+  </aside>
+
+  <section class="below">
+    <div class="block" id="summary"></div>
+    <div class="block" id="clusters"></div>
+    <div class="block" id="evaluation"></div>
+    <div class="block">
+      <h2>How to read this</h2>
+      <p>Each condition changes one thing about the environment. FlakeLab runs the full test
+        suite many times under each condition, in interleaved order, then compares failure
+        rates with the baseline using Fisher's exact test and the Holm-Bonferroni correction.</p>
+      <p>A <b>confirmed observation</b> is a measured difference. A <b>supported hypothesis</b>
+        is what that difference suggests about the cause. It is an association, not proof.
+        <b>Unknown</b> means the test is unreliable but no tested condition explains it.</p>
+    </div>
+  </section>
+</main>
+
+<script>
+const ORDER = { supported_hypothesis: 0, always_failing: 1, unknown: 2, weak_signal: 3, stable: 4 };
+const LEVEL_TEXT = { supported_hypothesis: "Supported hypothesis", unknown: "Unknown cause",
+  weak_signal: "Weak signal", always_failing: "Always failing", stable: "Stable" };
+let selected = null, latest = null, timer = null;
+
+const esc = s => String(s ?? "").replace(/[&<>"']/g,
+  c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fileOf = id => id.split("::")[0];
+const pct = x => `${Math.round(x * 100)}%`;
+
+function renderHeader(doc) {
+  const m = doc.meta;
+  document.getElementById("project").textContent = m.project ? `· ${m.project}` : "";
+  const done = m.completed_runs, total = m.total_runs || 1;
+  document.getElementById("bar").style.width = `${(done / total) * 100}%`;
+  const s = doc.summary || {};
+  const status = document.getElementById("status");
+  if (m.status === "done") {
+    const problems = (s.supported_hypotheses || 0) + (s.unknown || 0) + (s.weak_signals || 0);
+    status.firstChild.textContent = problems
+      ? `${problems} unreliable ${problems === 1 ? "test" : "tests"} investigated`
+      : "No unreliable tests found";
+  } else {
+    status.firstChild.textContent = `Experiment running: ${done} of ${m.total_runs} runs`;
+  }
+  const skipped = (m.skipped_conditions || []).map(c => c.label).join(", ");
+  document.getElementById("substatus").textContent =
+    `${m.target}. ${m.runs_per_condition} runs per condition.` +
+    (skipped ? ` Skipped (need Docker): ${skipped}.` : "");
+}
+
+function renderPlate(doc) {
+  const conds = doc.meta.conditions;
+  document.getElementById("thead").innerHTML =
+    `<tr><th class="test" scope="col">Test</th>` +
+    conds.map(c => `<th scope="col" title="${esc(c.description)}">${esc(c.label)}</th>`).join("") +
+    `<th class="verdict" scope="col">Verdict</th></tr>`;
+
+  const tests = [...doc.tests].sort((a, b) =>
+    (ORDER[a.verdict.level] - ORDER[b.verdict.level]) || a.nodeid.localeCompare(b.nodeid));
+  const per = doc.meta.runs_per_condition;
+  const tbody = document.getElementById("tbody");
+  const existing = new Map([...tbody.rows].map(r => [r.dataset.id, r]));
+  const frag = document.createDocumentFragment();
+
+  tests.forEach(t => {
+    let row = existing.get(t.nodeid);
+    if (!row) {
+      row = document.createElement("tr");
+      row.dataset.id = t.nodeid;
+      row.tabIndex = 0;
+      row.innerHTML = `<td class="test">${esc(t.name)}<span class="file">${esc(fileOf(t.nodeid))}</span></td>` +
+        conds.map(c => `<td data-c="${esc(c.name)}"><div class="well"></div><span class="count"></span></td>`).join("") +
+        `<td class="verdict"></td>`;
+      row.addEventListener("click", () => select(t.nodeid));
+      row.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(t.nodeid); } });
+    }
+    const sig = new Set(t.observations.filter(o => o.significant).map(o => o.condition));
+    const weak = new Set(t.observations.filter(o => !o.significant && o.p_value < doc.meta.alpha).map(o => o.condition));
+    conds.forEach(c => {
+      const cell = row.querySelector(`td[data-c="${CSS.escape(c.name)}"]`);
+      const d = t.per_condition[c.name] || { runs: 0, failures: 0 };
+      const well = cell.querySelector(".well");
+      well.style.setProperty("--fail", `${(d.failures / per) * 100}%`);
+      well.style.setProperty("--done", `${(d.runs / per) * 100}%`);
+      well.classList.toggle("sig", sig.has(c.name));
+      well.classList.toggle("weak", weak.has(c.name));
+      cell.querySelector(".count").textContent = d.runs ? `${d.failures}/${d.runs}` : "";
+      cell.title = `${c.label}: failed ${d.failures} of ${d.runs} runs`;
+    });
+    const v = t.verdict;
+    row.querySelector(".verdict").innerHTML =
+      `<span class="tag ${v.level}">${esc(v.level === "supported_hypothesis" ? v.title : LEVEL_TEXT[v.level])}</span>`;
+    row.classList.toggle("selected", t.nodeid === selected);
+    frag.appendChild(row);
+  });
+  tbody.appendChild(frag);
+}
+
+function renderDetail(doc) {
+  const box = document.getElementById("detail");
+  const t = doc.tests.find(x => x.nodeid === selected);
+  if (!t) return;
+  const v = t.verdict;
+  const sig = t.observations.filter(o => o.significant);
+  const other = t.observations.filter(o => !o.significant);
+  let html = `<h2>${esc(t.name)}</h2><p class="file">${esc(fileOf(t.nodeid))}</p>
+    <span class="tag ${v.level}">${esc(LEVEL_TEXT[v.level])}</span>`;
+  if (t.hidden_sensitivity) html += `<p class="hidden-note">Never failed at baseline. Plain reruns
+    would not find this, but it can break on a CI runner with a different environment.</p>`;
+  if (sig.length) html += `<h3>Confirmed observations</h3><ul>${sig.map(o => `<li>${esc(o.text)}</li>`).join("")}</ul>`;
+  if (v.level === "supported_hypothesis") {
+    html += `<h3>Supported hypothesis: ${esc(v.title)}</h3><p>${esc(v.explanation)}</p>
+      <p class="caveat">Found by controlled experiments. This is an association, not proof of the root cause.</p>`;
+  } else if (v.level !== "stable") {
+    html += `<h3>${esc(v.title)}</h3><p>${esc(v.explanation)}</p>`;
+  } else {
+    html += `<p>${esc(v.explanation)}</p>`;
+  }
+  if (other.length) html += `<h3>Other measurements</h3><ul>${other.map(o => `<li>${esc(o.text)}</li>`).join("")}</ul>`;
+  if (v.fix) html += `<h3>Suggested fix</h3><p>${esc(v.fix)}</p>`;
+  const r = t.reproduce;
+  if (r && r.command) {
+    const base = r.baseline_runs_to_failure ? `about 1 in ${Math.round(r.baseline_runs_to_failure)} runs at baseline` : "never at baseline";
+    html += `<h3>Reproduce</h3><p>Fails ${pct(r.failure_rate)} of runs under this condition, vs ${base}.
+      ${esc(r.note || "")}</p><pre id="cmd">${esc(r.command)}</pre>
+      <button class="copy" id="copy">Copy command</button>`;
+  }
+  if (t.cluster) html += `<h3>Cluster ${t.cluster}</h3><p>Fails together with other tests. See failure clusters below.</p>`;
+  box.innerHTML = html;
+  const btn = document.getElementById("copy");
+  if (btn) btn.onclick = () => navigator.clipboard.writeText(r.command)
+    .then(() => { btn.textContent = "Copied"; setTimeout(() => btn.textContent = "Copy command", 1500); });
+}
+
+function renderBelow(doc) {
+  const s = doc.summary;
+  document.getElementById("summary").innerHTML = `<h2>Summary</h2>
+    <p class="summary-line">Of <b>${s.tests}</b> tests, <b>${s.baseline_flaky}</b> failed now and then
+    at baseline and <b>${s.hidden_sensitivities}</b> only failed when the environment changed.
+    FlakeLab found a supported hypothesis for <b>${s.supported_hypotheses}</b>; the cause of
+    <b>${s.unknown}</b> is unknown${s.weak_signals ? `, and <b>${s.weak_signals}</b> need more runs` : ""}.</p>`;
+
+  const cl = doc.clusters || [];
+  document.getElementById("clusters").innerHTML = `<h2>Failure clusters</h2>` + (cl.length
+    ? `<p>Tests that fail in the same runs probably share one cause, so one fix can repair all of them.</p><ul>` +
+      cl.map(c => `<li><b>Cluster ${c.id}</b>: ${c.tests.map(n => `<code>${esc(n.split("::").pop())}</code>`).join(", ")}
+        (${pct(c.similarity)} co-failure similarity). ${esc(c.shared_title)}.</li>`).join("") + `</ul>`
+    : `<p>No clusters yet. Clusters appear when two or more tests fail in the same runs.</p>`);
+
+  const ev = doc.evaluation;
+  const box = document.getElementById("evaluation");
+  if (ev && ev.scored) {
+    box.innerHTML = `<h2>Check against known causes</h2>
+      <p><span class="big">${ev.correct}/${ev.scored}</span><br>diagnoses matched the cause planted in the demo tests.</p>
+      <p>Of ${ev.problem_tests} problem tests, ${ev.visible_to_baseline_reruns} ever failed in plain
+      baseline reruns. FlakeLab flagged ${ev.found_by_flakelab}.</p>
+      <p class="caveat">Known causes only exist for designed fixtures, so this checks the tool works as
+      intended. It is not a measure of real-world accuracy.</p>`;
+  } else {
+    box.innerHTML = `<h2>Check against known causes</h2><p>Run with <code>--expected</code> and a file of
+      known causes to compare FlakeLab's diagnoses with the truth.</p>`;
+  }
+}
+
+function select(id) {
+  selected = id;
+  if (latest) { renderPlate(latest); renderDetail(latest); }
+}
+
+async function poll() {
+  try {
+    const res = await fetch(`results.json?t=${Date.now()}`, { cache: "no-store" });
+    if (!res.ok) throw new Error(res.status);
+    const doc = await res.json();
+    latest = doc;
+    if (!selected) {
+      const first = [...doc.tests].sort((a, b) => ORDER[a.verdict.level] - ORDER[b.verdict.level])[0];
+      if (first && first.verdict.level !== "stable") selected = first.nodeid;
+    }
+    renderHeader(doc); renderPlate(doc); renderDetail(doc); renderBelow(doc);
+    if (doc.meta.status === "done") return;  // stop polling when finished
+  } catch (e) {
+    if (location.protocol === "file:") {
+      document.getElementById("app").innerHTML = `<div class="error"><h2>Open this page through FlakeLab</h2>
+        <p>Browsers block reading results.json from a file. Run <code>flakelab serve --dir &lt;results folder&gt;</code>
+        and open <code>http://localhost:8080</code>.</p></div>`;
+      return;
+    }
+  }
+  timer = setTimeout(poll, 1500);
+}
+poll();
+</script>
+</body>
+</html>

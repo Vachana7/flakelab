@@ -161,6 +161,36 @@ def _cmd_capsule_verify(args) -> int:
     return 0 if result["verdict"] == "reproduced" else 1
 
 
+def _cmd_benchmark(args) -> int:
+    from flakelab.benchmark import run_benchmark
+
+    if args.runs < 2:
+        print("error: --runs must be at least 2", file=sys.stderr)
+        return 2
+    pytest_args = shlex.split(args.pytest_args)
+    runner: DockerRunner | LocalRunner
+    if args.runner == "docker":
+        if not args.image:
+            print("error: --image is required with --runner docker", file=sys.stderr)
+            return 2
+        runner = DockerRunner(args.image, pytest_args, network=args.docker_network)
+        try:
+            runner.check()
+        except RuntimeError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+    else:
+        runner = LocalRunner(args.repo, pytest_args)
+    expected = json.loads(Path(args.expected).read_text())
+    m = run_benchmark(runner, args.runs, expected, args.out)
+    d = m["detection"]
+    print(
+        f"\nDetection (all problem tests): FlakeLab {d['flakelab_all_problems']:.0%}, "
+        f"reruns {d['reruns_all_problems']:.0%}. Report: {Path(args.out) / 'EVALUATION.md'}"
+    )
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="flakelab", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -209,6 +239,17 @@ def build_parser() -> argparse.ArgumentParser:
     rep = sub.add_parser("report", help="print the Markdown report")
     rep.add_argument("--results", default="flakelab-results/results.json")
     rep.set_defaults(func=_cmd_report)
+
+    b = sub.add_parser("benchmark", help="evaluate FlakeLab vs plain reruns on known causes")
+    b.add_argument("--runner", choices=["docker", "local"], default="docker")
+    b.add_argument("--image")
+    b.add_argument("--repo", default=".")
+    b.add_argument("--docker-network")
+    b.add_argument("--runs", type=int, default=20, help="runs per condition (default 20)")
+    b.add_argument("--pytest-args", default="")
+    b.add_argument("--expected", required=True, help="JSON of known causes")
+    b.add_argument("--out", default="evaluation")
+    b.set_defaults(func=_cmd_benchmark)
 
     cap = sub.add_parser("capsule", help="create or verify reproduction capsules")
     cap_sub = cap.add_subparsers(dest="capsule_command", required=True)

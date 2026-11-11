@@ -45,7 +45,7 @@ class Experiment:
         runner,
         conditions: list[Condition],
         runs: int,
-        out_dir: str,
+        out_dir: str | Path,
         seed: int = 42,
         workers: int = 1,
         alpha: float = 0.05,

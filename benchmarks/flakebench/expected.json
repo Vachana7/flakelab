@@ -1,0 +1,33 @@
+{
+  "tests/test_cpu.py::test_cpu_strong": "cpu",
+  "tests/test_cpu.py::test_cpu_medium": "cpu",
+  "tests/test_cpu.py::test_cpu_marginal": "cpu",
+  "tests/test_memory.py::test_memory_200mb": "memory",
+  "tests/test_memory.py::test_memory_160mb": "memory",
+  "tests/test_memory.py::test_memory_40mb_control": "stable",
+  "tests/test_network.py::test_network_forecast": "network",
+  "tests/test_network.py::test_network_alerts": "network",
+  "tests/test_network.py::test_network_health": "network",
+  "tests/test_order.py::test_order_brittle_reserve": "order",
+  "tests/test_order.py::test_order_brittle_report": "order",
+  "tests/test_order.py::test_order_victim_currency": "order",
+  "tests/test_order.py::test_order_setup": "stable",
+  "tests/test_order.py::test_order_polluter": "stable",
+  "tests/test_timezone.py::test_timezone_report_title": "timezone",
+  "tests/test_timezone.py::test_timezone_date_boundary": "timezone",
+  "tests/test_random.py::test_random_failure[0.05]": "intrinsic",
+  "tests/test_random.py::test_random_failure[0.2]": "intrinsic",
+  "tests/test_random.py::test_random_failure[0.5]": "intrinsic",
+  "tests/test_multi.py::test_multi_network_and_timezone": [
+    "network",
+    "timezone"
+  ],
+  "tests/test_stable.py::test_stable_arithmetic[0]": "stable",
+  "tests/test_stable.py::test_stable_arithmetic[1]": "stable",
+  "tests/test_stable.py::test_stable_arithmetic[2]": "stable",
+  "tests/test_stable.py::test_stable_arithmetic[3]": "stable",
+  "tests/test_stable.py::test_stable_arithmetic[4]": "stable",
+  "tests/test_stable.py::test_stable_arithmetic[5]": "stable",
+  "tests/test_stable.py::test_stable_arithmetic[6]": "stable",
+  "tests/test_stable.py::test_stable_arithmetic[7]": "stable"
+}

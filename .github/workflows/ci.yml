@@ -89,7 +89,7 @@ jobs:
         run: |
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
             -v "$PWD/dood-results:/results" flakelab:ci run --runner docker \
-            --image flakelab-demo:ci --docker-network flakelab-net --runs 1 \
+            --image flakelab-demo:ci --docker-network flakelab-net --runs 2 \
             --conditions no_network --out /results
           test -f dood-results/results.json
       - name: Upload integration results

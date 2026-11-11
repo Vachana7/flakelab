@@ -49,6 +49,9 @@ jobs:
       - name: Add the report to the job summary
         if: always()
         run: cat evaluation/EVALUATION.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Export results into the log (for environments that cannot download artifacts)
+        if: always()
+        run: tar czf - evaluation | base64 | sed 's/^/FLAKELAB_B64 /'
       - uses: actions/upload-artifact@v4
         if: always()
         with:

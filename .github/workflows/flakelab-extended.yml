@@ -52,6 +52,9 @@ jobs:
       - name: Add the report to the job summary
         if: always()
         run: cat site/report.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Export results into the log (for environments that cannot download artifacts)
+        if: always()
+        run: tar czf - site | base64 | sed 's/^/FLAKELAB_B64 /'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -64,6 +67,9 @@ jobs:
   deploy-dashboard:
     needs: experiment
     runs-on: ubuntu-latest
+    # Publishing needs GitHub Pages switched on (Settings -> Pages -> GitHub Actions).
+    # Until then this job is allowed to fail without failing the experiment.
+    continue-on-error: true
     permissions:
       pages: write
       id-token: write

@@ -1,0 +1,4320 @@
+{
+ "meta": {
+  "tool": "FlakeLab",
+  "version": "0.1.0",
+  "project": "ShopLite demo (extended)",
+  "runner": "docker",
+  "target": "Docker image flakelab-demo:latest on network flakelab-net",
+  "status": "done",
+  "started_at": "2026-11-11T15:57:52Z",
+  "updated_at": "2026-11-11T16:00:11Z",
+  "runs_per_condition": 10,
+  "total_runs": 70,
+  "completed_runs": 70,
+  "workers": 1,
+  "seed": 42,
+  "alpha": 0.05,
+  "conditions": [
+   {
+    "name": "baseline",
+    "label": "Baseline",
+    "category": "baseline",
+    "description": "Normal resources, network on, default test order, UTC timezone.",
+    "docker_args": [],
+    "env": {}
+   },
+   {
+    "name": "cpu_low",
+    "label": "CPU 0.25 core",
+    "category": "cpu",
+    "description": "Container limited to a quarter of one CPU core (--cpus 0.25).",
+    "docker_args": [
+     "--cpus",
+     "0.25"
+    ],
+    "env": {}
+   },
+   {
+    "name": "memory_low",
+    "label": "Memory 128 MB",
+    "category": "memory",
+    "description": "Container limited to 128 MB of RAM with no swap (--memory 128m).",
+    "docker_args": [
+     "--memory",
+     "128m",
+     "--memory-swap",
+     "128m"
+    ],
+    "env": {}
+   },
+   {
+    "name": "no_network",
+    "label": "Network off",
+    "category": "network",
+    "description": "Container has no network access at all (--network none).",
+    "docker_args": [
+     "--network",
+     "none"
+    ],
+    "env": {}
+   },
+   {
+    "name": "reverse_order",
+    "label": "Reverse order",
+    "category": "order",
+    "description": "Tests run in exactly the reverse of the normal order.",
+    "docker_args": [],
+    "env": {
+     "FLAKELAB_ORDER": "reverse"
+    }
+   },
+   {
+    "name": "shuffled_order",
+    "label": "Shuffled order",
+    "category": "order",
+    "description": "Tests run in a random (seeded, reproducible) order each run.",
+    "docker_args": [],
+    "env": {
+     "FLAKELAB_ORDER": "random"
+    }
+   },
+   {
+    "name": "timezone_ist",
+    "label": "Timezone UTC+5:30",
+    "category": "timezone",
+    "description": "System timezone set to UTC+5:30 instead of UTC (TZ=IST-5:30).",
+    "docker_args": [],
+    "env": {
+     "TZ": "IST-5:30"
+    }
+   }
+  ],
+  "skipped_conditions": [],
+  "environment": {
+   "runner": "docker",
+   "image": {
+    "reference": "flakelab-demo:latest",
+    "id": "sha256:67171b38cd635edfa40bd3f6ff44f8637505172d9b1809f1761758d4615a778a",
+    "repo_digests": [
+     "flakelab-demo@sha256:67171b38cd635edfa40bd3f6ff44f8637505172d9b1809f1761758d4615a778a"
+    ],
+    "created": "2026-11-11T15:57:51.2342601Z",
+    "os": "linux",
+    "architecture": "amd64",
+    "labels": {}
+   },
+   "project": {
+    "python": "3.12.16",
+    "python_implementation": "CPython",
+    "os": "Debian GNU/Linux 13 (trixie)",
+    "architecture": "x86_64",
+    "packages": [
+     "iniconfig==2.3.1",
+     "packaging==26.3",
+     "pip==25.0.1",
+     "pluggy==1.7.0",
+     "pytest==8.3.4"
+    ],
+    "timezone": "UTC",
+    "TZ": null,
+    "locale": "LC_CTYPE=C.UTF-8;LC_NUMERIC=C;LC_TIME=C;LC_COLLATE=C;LC_MONETARY=C;LC_MESSAGES=C;LC_PAPER=C;LC_NAME=C;LC_ADDRESS=C;LC_TELEPHONE=C;LC_MEASUREMENT=C;LC_IDENTIFICATION=C",
+    "preferred_encoding": "UTF-8"
+   },
+   "host": {
+    "docker_version": "29.4.2",
+    "cpus": 4,
+    "memory_bytes": 16759439360,
+    "os": "Ubuntu 26.04.1 LTS",
+    "cgroup_version": "2"
+   },
+   "network": "flakelab-net",
+   "repository_revision": "4c961c6c0c36a8cf03ccad40f71cbb0cf275a446",
+   "revision_source": "GITHUB_SHA or git rev-parse in the working directory (best effort)"
+  },
+  "timing": {
+   "wall_seconds": 138.18,
+   "runs": 70,
+   "mean_run_seconds": 1.97,
+   "mean_pytest_seconds": 0.958,
+   "mean_overhead_seconds": 1.012,
+   "overhead_note": "overhead = run wall time minus time inside pytest (container create/start/copy/remove for Docker; interpreter start for local)",
+   "flakelab_cpu_seconds": 0.45,
+   "flakelab_max_rss_mb": 24.0
+  },
+  "capsules": [
+   {
+    "test": "tests/test_auth.py::test_session_tokens_unique",
+    "path": "capsules/tests_test_auth.py__test_session_tokens_unique"
+   },
+   {
+    "test": "tests/test_exports.py::test_export_catalog",
+    "path": "capsules/tests_test_exports.py__test_export_catalog"
+   },
+   {
+    "test": "tests/test_inventory.py::test_low_stock_alert",
+    "path": "capsules/tests_test_inventory.py__test_low_stock_alert"
+   },
+   {
+    "test": "tests/test_inventory.py::test_reserve_stock",
+    "path": "capsules/tests_test_inventory.py__test_reserve_stock"
+   },
+   {
+    "test": "tests/test_payments.py::test_authorize_within_sla",
+    "path": "capsules/tests_test_payments.py__test_authorize_within_sla"
+   },
+   {
+    "test": "tests/test_reports.py::test_report_title",
+    "path": "capsules/tests_test_reports.py__test_report_title"
+   },
+   {
+    "test": "tests/test_weather.py::test_delivery_forecast",
+    "path": "capsules/tests_test_weather.py__test_delivery_forecast"
+   },
+   {
+    "test": "tests/test_weather.py::test_weather_alerts",
+    "path": "capsules/tests_test_weather.py__test_weather_alerts"
+   }
+  ]
+ },
+ "tests": [
+  {
+   "nodeid": "tests/test_auth.py::test_session_tokens_unique",
+   "name": "test_session_tokens_unique",
+   "per_condition": {
+    "baseline": {
+     "runs": 10,
+     "failures": 2,
+     "rate": 0.2
+    },
+    "cpu_low": {
+     "runs": 10,
+     "failures": 1,
+     "rate": 0.1
+    },
+    "memory_low": {
+     "runs": 10,
+     "failures": 1,
+     "rate": 0.1
+    },
+    "no_network": {
+     "runs": 10,
+     "failures": 1,
+     "rate": 0.1
+    },
+    "reverse_order": {
+     "runs": 10,
+     "failures": 4,
+     "rate": 0.4
+    },
+    "shuffled_order": {
+     "runs": 10,
+     "failures": 1,
+     "rate": 0.1
+    },
+    "timezone_ist": {
+     "runs": 10,
+     "failures": 2,
+     "rate": 0.2
+    }
+   },
+   "baseline_flaky": true,
+   "hidden_sensitivity": false,
+   "observations": [
+    {
+     "condition": "reverse_order",
+     "label": "Reverse order",
+     "category": "order",
+     "failures": 4,
+     "runs": 10,
+     "baseline_failures": 2,
+     "baseline_runs": 10,
+     "p_value": 0.3142414860681115,
+     "significant": false,
+     "text": "Failed 4/10 runs with Reverse order vs 2/10 at baseline (p = 0.314, not significant)."
+    },
+    {
+     "condition": "timezone_ist",
+     "label": "Timezone UTC+5:30",
+     "category": "timezone",
+     "failures": 2,
+     "runs": 10,
+     "baseline_failures": 2,
+     "baseline_runs": 10,
+     "p_value": 0.7089783281733746,
+     "significant": false,
+     "text": "Failed 2/10 runs with Timezone UTC+5:30 vs 2/10 at baseline (p = 0.709, not significant)."
+    },
+    {
+     "condition": "cpu_low",
+     "label": "CPU 0.25 core",
+     "category": "cpu",
+     "failures": 1,
+     "runs": 10,
+     "baseline_failures": 2,
+     "baseline_runs": 10,
+     "p_value": 0.8947368421052632,
+     "significant": false,
+     "text": "Failed 1/10 runs with CPU 0.25 core vs 2/10 at baseline (p = 0.895, not significant)."
+    },
+    {
+     "condition": "memory_low",
+     "label": "Memory 128 MB",
+     "category": "memory",
+     "failures": 1,
+     "runs": 10,
+     "baseline_failures": 2,
+     "baseline_runs": 10,
+     "p_value": 0.8947368421052632,
+     "significant": false,
+     "text": "Failed 1/10 runs with Memory 128 MB vs 2/10 at baseline (p = 0.895, not significant)."
+    },
+    {
+     "condition": "no_network",
+     "label": "Network off",
+     "category": "network",
+     "failures": 1,
+     "runs": 10,
+     "baseline_failures": 2,
+     "baseline_runs": 10,
+     "p_value": 0.8947368421052632,
+     "significant": false,
+     "text": "Failed 1/10 runs with Network off vs 2/10 at baseline (p = 0.895, not significant)."
+    },
+    {
+     "condition": "shuffled_order",
+     "label": "Shuffled order",
+     "category": "order",
+     "failures": 1,
+     "runs": 10,
+     "baseline_failures": 2,
+     "baseline_runs": 10,
+     "p_value": 0.8947368421052632,
+     "significant": false,
+     "text": "Failed 1/10 runs with Shuffled order vs 2/10 at baseline (p = 0.895, not significant)."
+    }
+   ],
+   "verdict": {
+    "level": "unknown",
+    "categories": [],
+    "title": "Unknown cause",
+    "explanation": "The test is unreliable, but none of the tested conditions explains its failures. Possible causes: internal randomness, concurrency inside the test, or a factor FlakeLab did not test.",
+    "fix": null
+   },
+   "reproduce": null,
+   "cluster": null,
+   "dna": [
+    0.2,
+    0.1,
+    0.1,
+    0.1,
+    0.4,
+    0.1,
+    0.2
+   ],
+   "dna_cluster": null
+  },
+  {
+   "nodeid": "tests/test_exports.py::test_export_catalog",
+   "name": "test_export_catalog",
+   "per_condition": {
+    "baseline": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "cpu_low": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "memory_low": {
+     "runs": 10,
+     "failures": 10,
+     "rate": 1.0
+    },
+    "no_network": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "reverse_order": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "shuffled_order": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "timezone_ist": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    }
+   },
+   "baseline_flaky": false,
+   "hidden_sensitivity": true,
+   "observations": [
+    {
+     "condition": "memory_low",
+     "label": "Memory 128 MB",
+     "category": "memory",
+     "failures": 10,
+     "runs": 10,
+     "baseline_failures": 0,
+     "baseline_runs": 10,
+     "p_value": 5.412544112234515e-06,
+     "significant": true,
+     "text": "Failed 10/10 runs with Memory 128 MB vs 0/10 at baseline (p < 0.001, significant after correction)."
+    }
+   ],
+   "verdict": {
+    "level": "supported_hypothesis",
+    "categories": [
+     "memory"
+    ],
+    "title": "Memory sensitivity",
+    "explanation": "The test fails more often when memory is limited. It may allocate more memory than a small CI runner provides.",
+    "fix": "Use smaller test data, stream instead of loading everything into memory, or document the minimum runner memory."
+   },
+   "reproduce": {
+    "condition": "memory_low",
+    "note": "",
+    "failure_rate": 1.0,
+    "baseline_rate": 0.0,
+    "runs_to_failure": 1.0,
+    "baseline_runs_to_failure": null,
+    "command": "docker run --rm --network flakelab-net --memory 128m --memory-swap 128m flakelab-demo:latest python -m pytest tests/test_exports.py::test_export_catalog"
+   },
+   "cluster": null,
+   "dna": [
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "dna_cluster": null
+  },
+  {
+   "nodeid": "tests/test_inventory.py::test_add_stock",
+   "name": "test_add_stock",
+   "per_condition": {
+    "baseline": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "cpu_low": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "memory_low": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "no_network": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "reverse_order": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "shuffled_order": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "timezone_ist": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    }
+   },
+   "baseline_flaky": false,
+   "hidden_sensitivity": false,
+   "observations": [],
+   "verdict": {
+    "level": "stable",
+    "categories": [],
+    "title": "Stable",
+    "explanation": "Never failed under any tested condition.",
+    "fix": null
+   },
+   "reproduce": null,
+   "cluster": null,
+   "dna": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "dna_cluster": null
+  },
+  {
+   "nodeid": "tests/test_inventory.py::test_low_stock_alert",
+   "name": "test_low_stock_alert",
+   "per_condition": {
+    "baseline": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "cpu_low": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "memory_low": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "no_network": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "reverse_order": {
+     "runs": 10,
+     "failures": 10,
+     "rate": 1.0
+    },
+    "shuffled_order": {
+     "runs": 10,
+     "failures": 9,
+     "rate": 0.9
+    },
+    "timezone_ist": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    }
+   },
+   "baseline_flaky": false,
+   "hidden_sensitivity": true,
+   "observations": [
+    {
+     "condition": "reverse_order",
+     "label": "Reverse order",
+     "category": "order",
+     "failures": 10,
+     "runs": 10,
+     "baseline_failures": 0,
+     "baseline_runs": 10,
+     "p_value": 5.412544112234515e-06,
+     "significant": true,
+     "text": "Failed 10/10 runs with Reverse order vs 0/10 at baseline (p < 0.001, significant after correction)."
+    },
+    {
+     "condition": "shuffled_order",
+     "label": "Shuffled order",
+     "category": "order",
+     "failures": 9,
+     "runs": 10,
+     "baseline_failures": 0,
+     "baseline_runs": 10,
+     "p_value": 5.953798523457966e-05,
+     "significant": true,
+     "text": "Failed 9/10 runs with Shuffled order vs 0/10 at baseline (p < 0.001, significant after correction)."
+    }
+   ],
+   "verdict": {
+    "level": "supported_hypothesis",
+    "categories": [
+     "order"
+    ],
+    "title": "Test-order dependency (shared state)",
+    "explanation": "The test's result depends on which tests ran before it, so tests share state.",
+    "fix": "Reset shared state in fixtures, avoid module-level mutable data, and make every test create the data it needs."
+   },
+   "reproduce": {
+    "condition": "reverse_order",
+    "note": "Runs the test on its own, without the earlier tests it depends on.",
+    "failure_rate": 1.0,
+    "baseline_rate": 0.0,
+    "runs_to_failure": 1.0,
+    "baseline_runs_to_failure": null,
+    "command": "docker run --rm --network flakelab-net flakelab-demo:latest python -m pytest tests/test_inventory.py::test_low_stock_alert"
+   },
+   "cluster": 1,
+   "dna": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.9,
+    0.0
+   ],
+   "dna_cluster": null
+  },
+  {
+   "nodeid": "tests/test_inventory.py::test_reserve_stock",
+   "name": "test_reserve_stock",
+   "per_condition": {
+    "baseline": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "cpu_low": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "memory_low": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "no_network": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "reverse_order": {
+     "runs": 10,
+     "failures": 10,
+     "rate": 1.0
+    },
+    "shuffled_order": {
+     "runs": 10,
+     "failures": 4,
+     "rate": 0.4
+    },
+    "timezone_ist": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    }
+   },
+   "baseline_flaky": false,
+   "hidden_sensitivity": true,
+   "observations": [
+    {
+     "condition": "reverse_order",
+     "label": "Reverse order",
+     "category": "order",
+     "failures": 10,
+     "runs": 10,
+     "baseline_failures": 0,
+     "baseline_runs": 10,
+     "p_value": 5.412544112234515e-06,
+     "significant": true,
+     "text": "Failed 10/10 runs with Reverse order vs 0/10 at baseline (p < 0.001, significant after correction)."
+    },
+    {
+     "condition": "shuffled_order",
+     "label": "Shuffled order",
+     "category": "order",
+     "failures": 4,
+     "runs": 10,
+     "baseline_failures": 0,
+     "baseline_runs": 10,
+     "p_value": 0.043343653250773995,
+     "significant": false,
+     "text": "Failed 4/10 runs with Shuffled order vs 0/10 at baseline (p = 0.043, not significant)."
+    }
+   ],
+   "verdict": {
+    "level": "supported_hypothesis",
+    "categories": [
+     "order"
+    ],
+    "title": "Test-order dependency (shared state)",
+    "explanation": "The test's result depends on which tests ran before it, so tests share state.",
+    "fix": "Reset shared state in fixtures, avoid module-level mutable data, and make every test create the data it needs."
+   },
+   "reproduce": {
+    "condition": "reverse_order",
+    "note": "Runs the test on its own, without the earlier tests it depends on.",
+    "failure_rate": 1.0,
+    "baseline_rate": 0.0,
+    "runs_to_failure": 1.0,
+    "baseline_runs_to_failure": null,
+    "command": "docker run --rm --network flakelab-net flakelab-demo:latest python -m pytest tests/test_inventory.py::test_reserve_stock"
+   },
+   "cluster": 1,
+   "dna": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.4,
+    0.0
+   ],
+   "dna_cluster": null
+  },
+  {
+   "nodeid": "tests/test_payments.py::test_authorize_within_sla",
+   "name": "test_authorize_within_sla",
+   "per_condition": {
+    "baseline": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "cpu_low": {
+     "runs": 10,
+     "failures": 9,
+     "rate": 0.9
+    },
+    "memory_low": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "no_network": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "reverse_order": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "shuffled_order": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "timezone_ist": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    }
+   },
+   "baseline_flaky": false,
+   "hidden_sensitivity": true,
+   "observations": [
+    {
+     "condition": "cpu_low",
+     "label": "CPU 0.25 core",
+     "category": "cpu",
+     "failures": 9,
+     "runs": 10,
+     "baseline_failures": 0,
+     "baseline_runs": 10,
+     "p_value": 5.953798523457966e-05,
+     "significant": true,
+     "text": "Failed 9/10 runs with CPU 0.25 core vs 0/10 at baseline (p < 0.001, significant after correction)."
+    }
+   ],
+   "verdict": {
+    "level": "supported_hypothesis",
+    "categories": [
+     "cpu"
+    ],
+    "title": "Resource sensitivity (CPU / timing)",
+    "explanation": "The test fails more often when CPU is scarce. It probably depends on something finishing within a fixed time.",
+    "fix": "Replace fixed sleeps and hard deadlines with condition-based waits, or mock the clock. If a deadline is a real requirement, test it separately on controlled hardware."
+   },
+   "reproduce": {
+    "condition": "cpu_low",
+    "note": "",
+    "failure_rate": 0.9,
+    "baseline_rate": 0.0,
+    "runs_to_failure": 1.1111111111111112,
+    "baseline_runs_to_failure": null,
+    "command": "docker run --rm --network flakelab-net --cpus 0.25 flakelab-demo:latest python -m pytest tests/test_payments.py::test_authorize_within_sla"
+   },
+   "cluster": null,
+   "dna": [
+    0.0,
+    0.9,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "dna_cluster": null
+  },
+  {
+   "nodeid": "tests/test_payments.py::test_refund_deducts_fee",
+   "name": "test_refund_deducts_fee",
+   "per_condition": {
+    "baseline": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "cpu_low": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "memory_low": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "no_network": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "reverse_order": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "shuffled_order": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "timezone_ist": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    }
+   },
+   "baseline_flaky": false,
+   "hidden_sensitivity": false,
+   "observations": [],
+   "verdict": {
+    "level": "stable",
+    "categories": [],
+    "title": "Stable",
+    "explanation": "Never failed under any tested condition.",
+    "fix": null
+   },
+   "reproduce": null,
+   "cluster": null,
+   "dna": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "dna_cluster": null
+  },
+  {
+   "nodeid": "tests/test_pricing.py::test_discount",
+   "name": "test_discount",
+   "per_condition": {
+    "baseline": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "cpu_low": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "memory_low": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "no_network": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "reverse_order": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "shuffled_order": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "timezone_ist": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    }
+   },
+   "baseline_flaky": false,
+   "hidden_sensitivity": false,
+   "observations": [],
+   "verdict": {
+    "level": "stable",
+    "categories": [],
+    "title": "Stable",
+    "explanation": "Never failed under any tested condition.",
+    "fix": null
+   },
+   "reproduce": null,
+   "cluster": null,
+   "dna": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "dna_cluster": null
+  },
+  {
+   "nodeid": "tests/test_pricing.py::test_gst",
+   "name": "test_gst",
+   "per_condition": {
+    "baseline": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "cpu_low": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "memory_low": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "no_network": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "reverse_order": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "shuffled_order": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "timezone_ist": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    }
+   },
+   "baseline_flaky": false,
+   "hidden_sensitivity": false,
+   "observations": [],
+   "verdict": {
+    "level": "stable",
+    "categories": [],
+    "title": "Stable",
+    "explanation": "Never failed under any tested condition.",
+    "fix": null
+   },
+   "reproduce": null,
+   "cluster": null,
+   "dna": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "dna_cluster": null
+  },
+  {
+   "nodeid": "tests/test_pricing.py::test_invalid_discount",
+   "name": "test_invalid_discount",
+   "per_condition": {
+    "baseline": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "cpu_low": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "memory_low": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "no_network": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "reverse_order": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "shuffled_order": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "timezone_ist": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    }
+   },
+   "baseline_flaky": false,
+   "hidden_sensitivity": false,
+   "observations": [],
+   "verdict": {
+    "level": "stable",
+    "categories": [],
+    "title": "Stable",
+    "explanation": "Never failed under any tested condition.",
+    "fix": null
+   },
+   "reproduce": null,
+   "cluster": null,
+   "dna": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "dna_cluster": null
+  },
+  {
+   "nodeid": "tests/test_reports.py::test_report_title",
+   "name": "test_report_title",
+   "per_condition": {
+    "baseline": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "cpu_low": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "memory_low": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "no_network": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "reverse_order": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "shuffled_order": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "timezone_ist": {
+     "runs": 10,
+     "failures": 10,
+     "rate": 1.0
+    }
+   },
+   "baseline_flaky": false,
+   "hidden_sensitivity": true,
+   "observations": [
+    {
+     "condition": "timezone_ist",
+     "label": "Timezone UTC+5:30",
+     "category": "timezone",
+     "failures": 10,
+     "runs": 10,
+     "baseline_failures": 0,
+     "baseline_runs": 10,
+     "p_value": 5.412544112234515e-06,
+     "significant": true,
+     "text": "Failed 10/10 runs with Timezone UTC+5:30 vs 0/10 at baseline (p < 0.001, significant after correction)."
+    }
+   ],
+   "verdict": {
+    "level": "supported_hypothesis",
+    "categories": [
+     "timezone"
+    ],
+    "title": "Environment assumption (timezone)",
+    "explanation": "The test fails when the machine's timezone changes, so it assumes a particular local time.",
+    "fix": "Use timezone-aware datetimes (UTC) in code, and pass time zones explicitly instead of relying on the machine's setting."
+   },
+   "reproduce": {
+    "condition": "timezone_ist",
+    "note": "",
+    "failure_rate": 1.0,
+    "baseline_rate": 0.0,
+    "runs_to_failure": 1.0,
+    "baseline_runs_to_failure": null,
+    "command": "docker run --rm --network flakelab-net -e TZ=IST-5:30 flakelab-demo:latest python -m pytest tests/test_reports.py::test_report_title"
+   },
+   "cluster": null,
+   "dna": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "dna_cluster": null
+  },
+  {
+   "nodeid": "tests/test_weather.py::test_delivery_forecast",
+   "name": "test_delivery_forecast",
+   "per_condition": {
+    "baseline": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "cpu_low": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "memory_low": {
+     "runs": 10,
+     "failures": 1,
+     "rate": 0.1
+    },
+    "no_network": {
+     "runs": 10,
+     "failures": 10,
+     "rate": 1.0
+    },
+    "reverse_order": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "shuffled_order": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    },
+    "timezone_ist": {
+     "runs": 10,
+     "failures": 0,
+     "rate": 0.0
+    }
+   },
+   "baseline_flaky": false,
+   "hidden_sensitivity": true,
+   "observations": [
+    {
+     "condition": "no_network",
+     "label": "Network off",
+     "category": "network",
+     "failures": 10,
+     "runs": 10,
+     "baseline_failures": 0,
+     "baseline_runs": 10,
+     "p_value": 5.412544112234515e-06,
+     "significant": true,
+     "text": "Failed 10/10 runs with Network off vs 0/10 at baseline (p < 0.001, significant after correction)."
+    },
+    {
+     "condition": "memory_low",
+     "label": "Memory 128 MB",
+     "category": "memory",
+     "failures": 1,
+     "runs": 10,
+     "baseline_failures": 0,
+     "baseline_runs": 10,
+     "p_value": 0.5,
+     "significant": false,
+     "text": "Failed 1/10 runs with Memory 128 MB vs 0/10 at baseline (p = 0.500, not significant)."
+    }
+   ],
+   "verdict": {
+    "level": "supported_hypothesis",
+    "categories": [
+     "network"
+    ],
+    "title": "Hidden external dependency",
+    "explanation": "The test fails more often without network access, so it depends on a service outside the test.",
+    "fix": "Mock or fake the external service in unit tests, and move real network checks into a separate integration-test job."
+   },
+   "reproduce": {
+    "condition": "no_network",
+    "note": "",
+    "failure_rate": 1.0,
+    "baseline_rate": 0.0,
+    "runs_to_failure": 1.0,
+    "baseline_runs_to_failure": null,
+    "command": "docker run --rm --network none flakelab-demo:latest python -m pytest tests/test_weather.py::test_delivery_forecast"
+   },
+   "cluster": 2,
+   "dna": [
+    0.0,
+    0.0,
+    0.1,
+    1.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "dna_cluster": 1
+  },
+  {
+   "nodeid": "tests/test_weather.py::test_weather_alerts",
+   "name": "test_weather_alerts",
+   "per_condition": {
+    "baseline": {
+     "runs": 10,
+     "failures": 4,
+     "rate": 0.4
+    },
+    "cpu_low": {
+     "runs": 10,
+     "failures": 1,
+     "rate": 0.1
+    },
+    "memory_low": {
+     "runs": 10,
+     "failures": 1,
+     "rate": 0.1
+    },
+    "no_network": {
+     "runs": 10,
+     "failures": 10,
+     "rate": 1.0
+    },
+    "reverse_order": {
+     "runs": 10,
+     "failures": 2,
+     "rate": 0.2
+    },
+    "shuffled_order": {
+     "runs": 10,
+     "failures": 1,
+     "rate": 0.1
+    },
+    "timezone_ist": {
+     "runs": 10,
+     "failures": 3,
+     "rate": 0.3
+    }
+   },
+   "baseline_flaky": true,
+   "hidden_sensitivity": false,
+   "observations": [
+    {
+     "condition": "no_network",
+     "label": "Network off",
+     "category": "network",
+     "failures": 10,
+     "runs": 10,
+     "baseline_failures": 4,
+     "baseline_runs": 10,
+     "p_value": 0.005417956656346749,
+     "significant": true,
+     "text": "Failed 10/10 runs with Network off vs 4/10 at baseline (p = 0.005, significant after correction)."
+    },
+    {
+     "condition": "timezone_ist",
+     "label": "Timezone UTC+5:30",
+     "category": "timezone",
+     "failures": 3,
+     "runs": 10,
+     "baseline_failures": 4,
+     "baseline_runs": 10,
+     "p_value": 0.8250773993808049,
+     "significant": false,
+     "text": "Failed 3/10 runs with Timezone UTC+5:30 vs 4/10 at baseline (p = 0.825, not significant)."
+    },
+    {
+     "condition": "reverse_order",
+     "label": "Reverse order",
+     "category": "order",
+     "failures": 2,
+     "runs": 10,
+     "baseline_failures": 4,
+     "baseline_runs": 10,
+     "p_value": 0.9295665634674922,
+     "significant": false,
+     "text": "Failed 2/10 runs with Reverse order vs 4/10 at baseline (p = 0.930, not significant)."
+    },
+    {
+     "condition": "cpu_low",
+     "label": "CPU 0.25 core",
+     "category": "cpu",
+     "failures": 1,
+     "runs": 10,
+     "baseline_failures": 4,
+     "baseline_runs": 10,
+     "p_value": 0.9837461300309598,
+     "significant": false,
+     "text": "Failed 1/10 runs with CPU 0.25 core vs 4/10 at baseline (p = 0.984, not significant)."
+    },
+    {
+     "condition": "memory_low",
+     "label": "Memory 128 MB",
+     "category": "memory",
+     "failures": 1,
+     "runs": 10,
+     "baseline_failures": 4,
+     "baseline_runs": 10,
+     "p_value": 0.9837461300309598,
+     "significant": false,
+     "text": "Failed 1/10 runs with Memory 128 MB vs 4/10 at baseline (p = 0.984, not significant)."
+    },
+    {
+     "condition": "shuffled_order",
+     "label": "Shuffled order",
+     "category": "order",
+     "failures": 1,
+     "runs": 10,
+     "baseline_failures": 4,
+     "baseline_runs": 10,
+     "p_value": 0.9837461300309598,
+     "significant": false,
+     "text": "Failed 1/10 runs with Shuffled order vs 4/10 at baseline (p = 0.984, not significant)."
+    }
+   ],
+   "verdict": {
+    "level": "supported_hypothesis",
+    "categories": [
+     "network"
+    ],
+    "title": "Hidden external dependency",
+    "explanation": "The test fails more often without network access, so it depends on a service outside the test.",
+    "fix": "Mock or fake the external service in unit tests, and move real network checks into a separate integration-test job."
+   },
+   "reproduce": {
+    "condition": "no_network",
+    "note": "",
+    "failure_rate": 1.0,
+    "baseline_rate": 0.4,
+    "runs_to_failure": 1.0,
+    "baseline_runs_to_failure": 2.5,
+    "command": "docker run --rm --network none flakelab-demo:latest python -m pytest tests/test_weather.py::test_weather_alerts"
+   },
+   "cluster": 2,
+   "dna": [
+    0.4,
+    0.1,
+    0.1,
+    1.0,
+    0.2,
+    0.1,
+    0.3
+   ],
+   "dna_cluster": 1
+  }
+ ],
+ "clusters": [
+  {
+   "id": 1,
+   "tests": [
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_inventory.py::test_reserve_stock"
+   ],
+   "size": 2,
+   "similarity": 0.74,
+   "shared_categories": [
+    "order"
+   ],
+   "shared_title": "Test-order dependency (shared state)"
+  },
+  {
+   "id": 2,
+   "tests": [
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "size": 2,
+   "similarity": 0.5,
+   "shared_categories": [
+    "network"
+   ],
+   "shared_title": "Hidden external dependency"
+  }
+ ],
+ "dna": {
+  "conditions": [
+   "baseline",
+   "cpu_low",
+   "memory_low",
+   "no_network",
+   "reverse_order",
+   "shuffled_order",
+   "timezone_ist"
+  ],
+  "threshold": 0.4,
+  "clusters": [
+   {
+    "id": 1,
+    "size": 2,
+    "tests": [
+     "tests/test_weather.py::test_delivery_forecast",
+     "tests/test_weather.py::test_weather_alerts"
+    ],
+    "signature": [
+     0.2,
+     0.05,
+     0.1,
+     1.0,
+     0.1,
+     0.05,
+     0.15
+    ],
+    "spread": 0.4,
+    "common_conditions": [
+     "Network off"
+    ],
+    "evidence": [
+     {
+      "condition": "no_network",
+      "label": "Network off",
+      "members_significant": 2,
+      "max_p_value": 0.005417956656346749
+     }
+    ],
+    "co_failure_similarity": 0.5,
+    "shared_file": "tests/test_weather.py",
+    "confidence": "medium",
+    "interpretation": "All members react to Network off and usually fail in the same runs: likely one shared dependency or event.",
+    "limitations": "Tests are grouped by similar behaviour under the tested conditions. A shared signature suggests a shared kind of weakness; it does not prove a shared root cause. Signatures from few runs are noisy."
+   }
+  ],
+  "quality": {
+   "tests_scored": 8,
+   "adjusted_rand_index": 0.65,
+   "note": "Compares DNA clusters with the planted causes of the fixtures (1 = perfect agreement, 0 = chance level)."
+  }
+ },
+ "summary": {
+  "tests": 13,
+  "baseline_flaky": 2,
+  "hidden_sensitivities": 6,
+  "supported_hypotheses": 7,
+  "unknown": 1,
+  "weak_signals": 0,
+  "always_failing": 0,
+  "stable": 5,
+  "clusters": 2,
+  "dna_clusters": 1
+ },
+ "evaluation": {
+  "rows": [
+   {
+    "nodeid": "tests/test_auth.py::test_session_tokens_unique",
+    "expected": "intrinsic",
+    "predicted": "unknown",
+    "correct": true
+   },
+   {
+    "nodeid": "tests/test_exports.py::test_export_catalog",
+    "expected": "memory",
+    "predicted": "memory",
+    "correct": true
+   },
+   {
+    "nodeid": "tests/test_inventory.py::test_add_stock",
+    "expected": "stable",
+    "predicted": "stable",
+    "correct": true
+   },
+   {
+    "nodeid": "tests/test_inventory.py::test_low_stock_alert",
+    "expected": "order",
+    "predicted": "order",
+    "correct": true
+   },
+   {
+    "nodeid": "tests/test_inventory.py::test_reserve_stock",
+    "expected": "order",
+    "predicted": "order",
+    "correct": true
+   },
+   {
+    "nodeid": "tests/test_payments.py::test_authorize_within_sla",
+    "expected": "cpu",
+    "predicted": "cpu",
+    "correct": true
+   },
+   {
+    "nodeid": "tests/test_payments.py::test_refund_deducts_fee",
+    "expected": "stable",
+    "predicted": "stable",
+    "correct": true
+   },
+   {
+    "nodeid": "tests/test_pricing.py::test_discount",
+    "expected": "stable",
+    "predicted": "stable",
+    "correct": true
+   },
+   {
+    "nodeid": "tests/test_pricing.py::test_gst",
+    "expected": "stable",
+    "predicted": "stable",
+    "correct": true
+   },
+   {
+    "nodeid": "tests/test_pricing.py::test_invalid_discount",
+    "expected": "stable",
+    "predicted": "stable",
+    "correct": true
+   },
+   {
+    "nodeid": "tests/test_reports.py::test_report_title",
+    "expected": "timezone",
+    "predicted": "timezone",
+    "correct": true
+   },
+   {
+    "nodeid": "tests/test_weather.py::test_delivery_forecast",
+    "expected": "network",
+    "predicted": "network",
+    "correct": true
+   },
+   {
+    "nodeid": "tests/test_weather.py::test_weather_alerts",
+    "expected": "network",
+    "predicted": "network",
+    "correct": true
+   }
+  ],
+  "accuracy": 1.0,
+  "correct": 13,
+  "scored": 13,
+  "problem_tests": 8,
+  "visible_to_baseline_reruns": 2,
+  "found_by_flakelab": 8,
+  "stable_tests": 5,
+  "false_positives": 0,
+  "false_positive_rate": 0.0,
+  "environmental_tests": 7,
+  "inconclusive": 0,
+  "inconclusive_rate": 0.0,
+  "wrong_attributions": 0
+ },
+ "runs": [
+  {
+   "condition": "baseline",
+   "index": 0,
+   "duration": 2.497,
+   "pytest_seconds": 1.511,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "failed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "failed"
+   }
+  },
+  {
+   "condition": "cpu_low",
+   "index": 0,
+   "duration": 4.267,
+   "pytest_seconds": 2.272,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "failed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  },
+  {
+   "condition": "memory_low",
+   "index": 0,
+   "duration": 1.319,
+   "pytest_seconds": 0.403,
+   "crashed": false,
+   "oom_killed": true,
+   "note": "out-of-memory kill inside the container",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "failed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  },
+  {
+   "condition": "no_network",
+   "index": 0,
+   "duration": 1.451,
+   "pytest_seconds": 0.682,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "failed",
+    "tests/test_weather.py::test_weather_alerts": "failed"
+   }
+  },
+  {
+   "condition": "reverse_order",
+   "index": 0,
+   "duration": 2.23,
+   "pytest_seconds": 1.518,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "reverse",
+   "order": [
+    "tests/test_weather.py::test_weather_alerts",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_auth.py::test_session_tokens_unique"
+   ],
+   "outcomes": {
+    "tests/test_weather.py::test_weather_alerts": "failed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "failed",
+    "tests/test_inventory.py::test_reserve_stock": "failed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_auth.py::test_session_tokens_unique": "passed"
+   }
+  },
+  {
+   "condition": "shuffled_order",
+   "index": 0,
+   "duration": 1.151,
+   "pytest_seconds": 0.425,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "random:42000",
+   "order": [
+    "tests/test_reports.py::test_report_title",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_weather.py::test_weather_alerts",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_payments.py::test_refund_deducts_fee"
+   ],
+   "outcomes": {
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "failed",
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed"
+   }
+  },
+  {
+   "condition": "timezone_ist",
+   "index": 0,
+   "duration": 1.138,
+   "pytest_seconds": 0.433,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "failed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  },
+  {
+   "condition": "baseline",
+   "index": 1,
+   "duration": 2.448,
+   "pytest_seconds": 1.523,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "failed"
+   }
+  },
+  {
+   "condition": "cpu_low",
+   "index": 1,
+   "duration": 4.059,
+   "pytest_seconds": 2.115,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "failed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  },
+  {
+   "condition": "memory_low",
+   "index": 1,
+   "duration": 1.105,
+   "pytest_seconds": 0.355,
+   "crashed": false,
+   "oom_killed": true,
+   "note": "out-of-memory kill inside the container",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "failed",
+    "tests/test_exports.py::test_export_catalog": "failed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  },
+  {
+   "condition": "no_network",
+   "index": 1,
+   "duration": 1.511,
+   "pytest_seconds": 0.76,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "failed",
+    "tests/test_weather.py::test_weather_alerts": "failed"
+   }
+  },
+  {
+   "condition": "reverse_order",
+   "index": 1,
+   "duration": 1.301,
+   "pytest_seconds": 0.54,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "reverse",
+   "order": [
+    "tests/test_weather.py::test_weather_alerts",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_auth.py::test_session_tokens_unique"
+   ],
+   "outcomes": {
+    "tests/test_weather.py::test_weather_alerts": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "failed",
+    "tests/test_inventory.py::test_reserve_stock": "failed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_auth.py::test_session_tokens_unique": "passed"
+   }
+  },
+  {
+   "condition": "shuffled_order",
+   "index": 1,
+   "duration": 1.361,
+   "pytest_seconds": 0.52,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "random:42001",
+   "order": [
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_weather.py::test_weather_alerts",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_reports.py::test_report_title"
+   ],
+   "outcomes": {
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "failed",
+    "tests/test_inventory.py::test_low_stock_alert": "failed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_reports.py::test_report_title": "passed"
+   }
+  },
+  {
+   "condition": "timezone_ist",
+   "index": 1,
+   "duration": 2.611,
+   "pytest_seconds": 1.539,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "failed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "failed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "failed"
+   }
+  },
+  {
+   "condition": "baseline",
+   "index": 2,
+   "duration": 1.163,
+   "pytest_seconds": 0.439,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "failed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  },
+  {
+   "condition": "cpu_low",
+   "index": 2,
+   "duration": 4.29,
+   "pytest_seconds": 2.359,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "failed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  },
+  {
+   "condition": "memory_low",
+   "index": 2,
+   "duration": 1.434,
+   "pytest_seconds": 0.585,
+   "crashed": false,
+   "oom_killed": true,
+   "note": "out-of-memory kill inside the container",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "failed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  },
+  {
+   "condition": "no_network",
+   "index": 2,
+   "duration": 1.334,
+   "pytest_seconds": 0.693,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "failed",
+    "tests/test_weather.py::test_weather_alerts": "failed"
+   }
+  },
+  {
+   "condition": "reverse_order",
+   "index": 2,
+   "duration": 1.141,
+   "pytest_seconds": 0.451,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "reverse",
+   "order": [
+    "tests/test_weather.py::test_weather_alerts",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_auth.py::test_session_tokens_unique"
+   ],
+   "outcomes": {
+    "tests/test_weather.py::test_weather_alerts": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "failed",
+    "tests/test_inventory.py::test_reserve_stock": "failed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_auth.py::test_session_tokens_unique": "passed"
+   }
+  },
+  {
+   "condition": "shuffled_order",
+   "index": 2,
+   "duration": 1.135,
+   "pytest_seconds": 0.409,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "random:42002",
+   "order": [
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "failed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  },
+  {
+   "condition": "timezone_ist",
+   "index": 2,
+   "duration": 2.286,
+   "pytest_seconds": 1.548,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "failed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "failed"
+   }
+  },
+  {
+   "condition": "baseline",
+   "index": 3,
+   "duration": 2.246,
+   "pytest_seconds": 1.532,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "failed"
+   }
+  },
+  {
+   "condition": "cpu_low",
+   "index": 3,
+   "duration": 4.487,
+   "pytest_seconds": 2.339,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "failed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  },
+  {
+   "condition": "memory_low",
+   "index": 3,
+   "duration": 2.753,
+   "pytest_seconds": 0.558,
+   "crashed": false,
+   "oom_killed": true,
+   "note": "out-of-memory kill inside the container",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "failed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  },
+  {
+   "condition": "no_network",
+   "index": 3,
+   "duration": 1.848,
+   "pytest_seconds": 0.825,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "failed",
+    "tests/test_weather.py::test_weather_alerts": "failed"
+   }
+  },
+  {
+   "condition": "reverse_order",
+   "index": 3,
+   "duration": 1.367,
+   "pytest_seconds": 0.5,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "reverse",
+   "order": [
+    "tests/test_weather.py::test_weather_alerts",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_auth.py::test_session_tokens_unique"
+   ],
+   "outcomes": {
+    "tests/test_weather.py::test_weather_alerts": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "failed",
+    "tests/test_inventory.py::test_reserve_stock": "failed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_auth.py::test_session_tokens_unique": "passed"
+   }
+  },
+  {
+   "condition": "shuffled_order",
+   "index": 3,
+   "duration": 1.538,
+   "pytest_seconds": 0.411,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "random:42003",
+   "order": [
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_weather.py::test_weather_alerts",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_reports.py::test_report_title"
+   ],
+   "outcomes": {
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "failed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_auth.py::test_session_tokens_unique": "failed",
+    "tests/test_reports.py::test_report_title": "passed"
+   }
+  },
+  {
+   "condition": "timezone_ist",
+   "index": 3,
+   "duration": 2.63,
+   "pytest_seconds": 1.554,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "failed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "failed"
+   }
+  },
+  {
+   "condition": "baseline",
+   "index": 4,
+   "duration": 1.136,
+   "pytest_seconds": 0.451,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  },
+  {
+   "condition": "cpu_low",
+   "index": 4,
+   "duration": 4.279,
+   "pytest_seconds": 2.228,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  },
+  {
+   "condition": "memory_low",
+   "index": 4,
+   "duration": 1.25,
+   "pytest_seconds": 0.359,
+   "crashed": false,
+   "oom_killed": true,
+   "note": "out-of-memory kill inside the container",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "failed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  },
+  {
+   "condition": "no_network",
+   "index": 4,
+   "duration": 1.673,
+   "pytest_seconds": 0.84,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "failed",
+    "tests/test_weather.py::test_weather_alerts": "failed"
+   }
+  },
+  {
+   "condition": "reverse_order",
+   "index": 4,
+   "duration": 1.178,
+   "pytest_seconds": 0.417,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "reverse",
+   "order": [
+    "tests/test_weather.py::test_weather_alerts",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_auth.py::test_session_tokens_unique"
+   ],
+   "outcomes": {
+    "tests/test_weather.py::test_weather_alerts": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "failed",
+    "tests/test_inventory.py::test_reserve_stock": "failed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_auth.py::test_session_tokens_unique": "passed"
+   }
+  },
+  {
+   "condition": "shuffled_order",
+   "index": 4,
+   "duration": 1.163,
+   "pytest_seconds": 0.424,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "random:42004",
+   "order": [
+    "tests/test_reports.py::test_report_title",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_weather.py::test_weather_alerts",
+    "tests/test_auth.py::test_session_tokens_unique"
+   ],
+   "outcomes": {
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "failed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "failed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed",
+    "tests/test_auth.py::test_session_tokens_unique": "passed"
+   }
+  },
+  {
+   "condition": "timezone_ist",
+   "index": 4,
+   "duration": 1.56,
+   "pytest_seconds": 0.468,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "failed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  },
+  {
+   "condition": "baseline",
+   "index": 5,
+   "duration": 1.303,
+   "pytest_seconds": 0.456,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  },
+  {
+   "condition": "cpu_low",
+   "index": 5,
+   "duration": 4.218,
+   "pytest_seconds": 2.222,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "failed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  },
+  {
+   "condition": "memory_low",
+   "index": 5,
+   "duration": 3.906,
+   "pytest_seconds": 2.838,
+   "crashed": false,
+   "oom_killed": true,
+   "note": "out-of-memory kill inside the container",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "failed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "failed",
+    "tests/test_weather.py::test_weather_alerts": "failed"
+   }
+  },
+  {
+   "condition": "no_network",
+   "index": 5,
+   "duration": 1.822,
+   "pytest_seconds": 0.752,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "failed",
+    "tests/test_weather.py::test_weather_alerts": "failed"
+   }
+  },
+  {
+   "condition": "reverse_order",
+   "index": 5,
+   "duration": 1.428,
+   "pytest_seconds": 0.707,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "reverse",
+   "order": [
+    "tests/test_weather.py::test_weather_alerts",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_auth.py::test_session_tokens_unique"
+   ],
+   "outcomes": {
+    "tests/test_weather.py::test_weather_alerts": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "failed",
+    "tests/test_inventory.py::test_reserve_stock": "failed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_auth.py::test_session_tokens_unique": "failed"
+   }
+  },
+  {
+   "condition": "shuffled_order",
+   "index": 5,
+   "duration": 1.683,
+   "pytest_seconds": 0.574,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "random:42005",
+   "order": [
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_weather.py::test_weather_alerts",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_pricing.py::test_discount"
+   ],
+   "outcomes": {
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "failed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_pricing.py::test_discount": "passed"
+   }
+  },
+  {
+   "condition": "timezone_ist",
+   "index": 5,
+   "duration": 1.882,
+   "pytest_seconds": 0.475,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "failed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  },
+  {
+   "condition": "baseline",
+   "index": 6,
+   "duration": 1.476,
+   "pytest_seconds": 0.4,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  },
+  {
+   "condition": "cpu_low",
+   "index": 6,
+   "duration": 4.097,
+   "pytest_seconds": 2.2,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "failed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  },
+  {
+   "condition": "memory_low",
+   "index": 6,
+   "duration": 1.376,
+   "pytest_seconds": 0.516,
+   "crashed": false,
+   "oom_killed": true,
+   "note": "out-of-memory kill inside the container",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "failed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  },
+  {
+   "condition": "no_network",
+   "index": 6,
+   "duration": 1.473,
+   "pytest_seconds": 0.798,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "failed",
+    "tests/test_weather.py::test_weather_alerts": "failed"
+   }
+  },
+  {
+   "condition": "reverse_order",
+   "index": 6,
+   "duration": 1.294,
+   "pytest_seconds": 0.419,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "reverse",
+   "order": [
+    "tests/test_weather.py::test_weather_alerts",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_auth.py::test_session_tokens_unique"
+   ],
+   "outcomes": {
+    "tests/test_weather.py::test_weather_alerts": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "failed",
+    "tests/test_inventory.py::test_reserve_stock": "failed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_auth.py::test_session_tokens_unique": "passed"
+   }
+  },
+  {
+   "condition": "shuffled_order",
+   "index": 6,
+   "duration": 2.356,
+   "pytest_seconds": 1.577,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "random:42006",
+   "order": [
+    "tests/test_pricing.py::test_discount",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_exports.py::test_export_catalog"
+   ],
+   "outcomes": {
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "failed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "failed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed"
+   }
+  },
+  {
+   "condition": "timezone_ist",
+   "index": 6,
+   "duration": 1.148,
+   "pytest_seconds": 0.413,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "failed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  },
+  {
+   "condition": "baseline",
+   "index": 7,
+   "duration": 2.232,
+   "pytest_seconds": 1.531,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "failed"
+   }
+  },
+  {
+   "condition": "cpu_low",
+   "index": 7,
+   "duration": 4.263,
+   "pytest_seconds": 2.238,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "failed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  },
+  {
+   "condition": "memory_low",
+   "index": 7,
+   "duration": 1.271,
+   "pytest_seconds": 0.437,
+   "crashed": false,
+   "oom_killed": true,
+   "note": "out-of-memory kill inside the container",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "failed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  },
+  {
+   "condition": "no_network",
+   "index": 7,
+   "duration": 1.371,
+   "pytest_seconds": 0.686,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "failed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "failed",
+    "tests/test_weather.py::test_weather_alerts": "failed"
+   }
+  },
+  {
+   "condition": "reverse_order",
+   "index": 7,
+   "duration": 1.207,
+   "pytest_seconds": 0.486,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "reverse",
+   "order": [
+    "tests/test_weather.py::test_weather_alerts",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_auth.py::test_session_tokens_unique"
+   ],
+   "outcomes": {
+    "tests/test_weather.py::test_weather_alerts": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "failed",
+    "tests/test_inventory.py::test_reserve_stock": "failed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_auth.py::test_session_tokens_unique": "failed"
+   }
+  },
+  {
+   "condition": "shuffled_order",
+   "index": 7,
+   "duration": 1.18,
+   "pytest_seconds": 0.433,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "random:42007",
+   "order": [
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_weather.py::test_weather_alerts",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount"
+   ],
+   "outcomes": {
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "failed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "failed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed"
+   }
+  },
+  {
+   "condition": "timezone_ist",
+   "index": 7,
+   "duration": 1.448,
+   "pytest_seconds": 0.411,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "failed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  },
+  {
+   "condition": "baseline",
+   "index": 8,
+   "duration": 1.1,
+   "pytest_seconds": 0.401,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  },
+  {
+   "condition": "cpu_low",
+   "index": 8,
+   "duration": 5.594,
+   "pytest_seconds": 3.606,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "failed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "failed"
+   }
+  },
+  {
+   "condition": "memory_low",
+   "index": 8,
+   "duration": 1.065,
+   "pytest_seconds": 0.359,
+   "crashed": false,
+   "oom_killed": true,
+   "note": "out-of-memory kill inside the container",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "failed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  },
+  {
+   "condition": "no_network",
+   "index": 8,
+   "duration": 1.436,
+   "pytest_seconds": 0.686,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "failed",
+    "tests/test_weather.py::test_weather_alerts": "failed"
+   }
+  },
+  {
+   "condition": "reverse_order",
+   "index": 8,
+   "duration": 1.182,
+   "pytest_seconds": 0.487,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "reverse",
+   "order": [
+    "tests/test_weather.py::test_weather_alerts",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_auth.py::test_session_tokens_unique"
+   ],
+   "outcomes": {
+    "tests/test_weather.py::test_weather_alerts": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "failed",
+    "tests/test_inventory.py::test_reserve_stock": "failed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_auth.py::test_session_tokens_unique": "failed"
+   }
+  },
+  {
+   "condition": "shuffled_order",
+   "index": 8,
+   "duration": 1.242,
+   "pytest_seconds": 0.448,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "random:42008",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "failed",
+    "tests/test_inventory.py::test_low_stock_alert": "failed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  },
+  {
+   "condition": "timezone_ist",
+   "index": 8,
+   "duration": 1.24,
+   "pytest_seconds": 0.415,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "failed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "failed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  },
+  {
+   "condition": "baseline",
+   "index": 9,
+   "duration": 1.172,
+   "pytest_seconds": 0.414,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  },
+  {
+   "condition": "cpu_low",
+   "index": 9,
+   "duration": 4.156,
+   "pytest_seconds": 2.195,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "failed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "failed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  },
+  {
+   "condition": "memory_low",
+   "index": 9,
+   "duration": 1.041,
+   "pytest_seconds": 0.355,
+   "crashed": false,
+   "oom_killed": true,
+   "note": "out-of-memory kill inside the container",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "failed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  },
+  {
+   "condition": "no_network",
+   "index": 9,
+   "duration": 1.296,
+   "pytest_seconds": 0.676,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "failed",
+    "tests/test_weather.py::test_weather_alerts": "failed"
+   }
+  },
+  {
+   "condition": "reverse_order",
+   "index": 9,
+   "duration": 2.348,
+   "pytest_seconds": 1.627,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "reverse",
+   "order": [
+    "tests/test_weather.py::test_weather_alerts",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_auth.py::test_session_tokens_unique"
+   ],
+   "outcomes": {
+    "tests/test_weather.py::test_weather_alerts": "failed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "failed",
+    "tests/test_inventory.py::test_reserve_stock": "failed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_auth.py::test_session_tokens_unique": "failed"
+   }
+  },
+  {
+   "condition": "shuffled_order",
+   "index": 9,
+   "duration": 1.182,
+   "pytest_seconds": 0.417,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "random:42009",
+   "order": [
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_weather.py::test_weather_alerts",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_inventory.py::test_low_stock_alert"
+   ],
+   "outcomes": {
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed"
+   }
+  },
+  {
+   "condition": "timezone_ist",
+   "index": 9,
+   "duration": 1.101,
+   "pytest_seconds": 0.415,
+   "crashed": false,
+   "oom_killed": false,
+   "note": "",
+   "order_env": "default",
+   "order": [
+    "tests/test_auth.py::test_session_tokens_unique",
+    "tests/test_exports.py::test_export_catalog",
+    "tests/test_inventory.py::test_add_stock",
+    "tests/test_inventory.py::test_reserve_stock",
+    "tests/test_inventory.py::test_low_stock_alert",
+    "tests/test_payments.py::test_authorize_within_sla",
+    "tests/test_payments.py::test_refund_deducts_fee",
+    "tests/test_pricing.py::test_discount",
+    "tests/test_pricing.py::test_gst",
+    "tests/test_pricing.py::test_invalid_discount",
+    "tests/test_reports.py::test_report_title",
+    "tests/test_weather.py::test_delivery_forecast",
+    "tests/test_weather.py::test_weather_alerts"
+   ],
+   "outcomes": {
+    "tests/test_auth.py::test_session_tokens_unique": "passed",
+    "tests/test_exports.py::test_export_catalog": "passed",
+    "tests/test_inventory.py::test_add_stock": "passed",
+    "tests/test_inventory.py::test_reserve_stock": "passed",
+    "tests/test_inventory.py::test_low_stock_alert": "passed",
+    "tests/test_payments.py::test_authorize_within_sla": "passed",
+    "tests/test_payments.py::test_refund_deducts_fee": "passed",
+    "tests/test_pricing.py::test_discount": "passed",
+    "tests/test_pricing.py::test_gst": "passed",
+    "tests/test_pricing.py::test_invalid_discount": "passed",
+    "tests/test_reports.py::test_report_title": "failed",
+    "tests/test_weather.py::test_delivery_forecast": "passed",
+    "tests/test_weather.py::test_weather_alerts": "passed"
+   }
+  }
+ ]
+}

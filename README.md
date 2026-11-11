@@ -18,7 +18,18 @@ which conditions are associated with each test's failures.
 | Reverse / shuffled order | pytest plugin reorders tests | shared state between tests |
 | Timezone UTC+5:30 | `TZ=IST-5:30` | local-time assumptions |
 
-> **Status:** expo MVP in active development (Nov 2026). See [docs/STATUS.md](docs/STATUS.md).
+FlakeLab has three parts:
+
+1. **Experiments.** Re-run the suite under each condition in fresh containers and report
+   confirmed observations, supported hypotheses or "unknown", with statistics.
+2. **Failure DNA.** Group tests by their experimental signature (failure rate under each
+   condition) and by co-failure (failing in the same runs), to find shared weaknesses.
+3. **Reproduction capsules.** For every investigated failure, a folder with the exact failing
+   test order, Docker settings, image and package versions, one-command replay scripts, and
+   `flakelab capsule verify` to check the reproduction statistically.
+
+> **Status:** expo MVP (Nov 2026). Verified on real Docker in CI. See
+> [docs/STATUS.md](docs/STATUS.md) and the [evaluation](docs/evaluation/EVALUATION.md).
 
 ## Quick start (Docker Desktop)
 
@@ -31,6 +42,14 @@ docker compose up --build          # FLAKELAB_RUNS=5 docker compose up --build f
 Open <http://localhost:8080> and watch the results fill in. The demo project
 (`demo/`, a small shop backend) contains deliberately planted flaky tests with known
 causes, listed in `demo/flakelab-expected.json`.
+
+## Reproduce a failure yourself
+
+```bash
+cd results/capsules/<test-name>
+bash reproduce.sh            # or ./reproduce.ps1 on Windows: one replay
+flakelab capsule verify .    # repeated runs vs baseline, with a Fisher test
+```
 
 ## Use it on your own project
 
@@ -72,6 +91,18 @@ experiments only (CPU, memory and network limits need containers and are skipped
   makes runs compete for CPU and can blur results.
 - Results on the demo project come from planted fixtures and only show the tool works as
   designed; they are not evidence of accuracy on real-world projects.
+
+## Documentation
+
+| Document | What it covers |
+|---|---|
+| [ARCHITECTURE](docs/ARCHITECTURE.md) | components, run sequence, CI/CD pipeline, data model, design decisions |
+| [METHODOLOGY](docs/METHODOLOGY.md) | experimental design, statistics, power table, confounders |
+| [RESEARCH](docs/RESEARCH.md) | prior work, comparison matrix, precise contribution and non-claims |
+| [EVALUATION](docs/evaluation/EVALUATION.md) | FlakeLab vs plain reruns at equal budget on known-cause fixtures |
+| [EXPO](docs/EXPO.md) | six-scene demo script and offline fallback |
+| [VIVA](docs/VIVA.md) | hard questions with model answers |
+| [learn/](docs/learn/) | lessons: hypothesis testing, Docker internals, CI/CD |
 
 ## Research this builds on
 

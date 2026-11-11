@@ -18,32 +18,52 @@ def jaccard_distance(a: set, b: set) -> float:
     return 1.0 - len(a & b) / len(a | b)
 
 
+def agglomerative(items: list, distance, threshold: float) -> list[list]:
+    """Average-linkage agglomerative clustering.
+
+    Start with every item in its own group; repeatedly merge the two groups whose
+    average pairwise distance is smallest, while it is at most `threshold`.
+    Pairwise distances are computed once and cached: O(n^2) memory. Each merge
+    scans all pairs of groups, so the whole run is O(n^3) time, which is fine for
+    hundreds of tests but would need a smarter algorithm for tens of thousands.
+    Returns all groups, including single items.
+    """
+    cache: dict = {}
+
+    def d(a, b):
+        key = (a, b) if a <= b else (b, a)
+        if key not in cache:
+            cache[key] = distance(a, b)
+        return cache[key]
+
+    groups = [[item] for item in items]
+
+    def avg_distance(g1, g2):
+        return sum(d(a, b) for a in g1 for b in g2) / (len(g1) * len(g2))
+
+    while len(groups) > 1:
+        best = None
+        for i in range(len(groups)):
+            for j in range(i + 1, len(groups)):
+                dist = avg_distance(groups[i], groups[j])
+                if best is None or dist < best[0]:
+                    best = (dist, i, j)
+        if best is None or best[0] > threshold:
+            break
+        _, i, j = best
+        groups[i] = sorted(groups[i] + groups[j])
+        del groups[j]
+    return groups
+
+
 def cluster_failures(failure_sets: dict, threshold: float = 0.5) -> list[list[str]]:
     """failure_sets: {test_id: set(run_keys where it failed)}.
     Returns clusters (lists of test ids) with at least 2 members."""
     tests = sorted(t for t, runs in failure_sets.items() if runs)
-    clusters = [[t] for t in tests]
-
-    def avg_distance(c1, c2):
-        total = 0.0
-        for a in c1:
-            for b in c2:
-                total += jaccard_distance(failure_sets[a], failure_sets[b])
-        return total / (len(c1) * len(c2))
-
-    while len(clusters) > 1:
-        best = None
-        for i in range(len(clusters)):
-            for j in range(i + 1, len(clusters)):
-                d = avg_distance(clusters[i], clusters[j])
-                if best is None or d < best[0]:
-                    best = (d, i, j)
-        if best is None or best[0] > threshold:
-            break
-        _, i, j = best
-        clusters[i] = sorted(clusters[i] + clusters[j])
-        del clusters[j]
-    return [c for c in clusters if len(c) >= 2]
+    groups = agglomerative(
+        tests, lambda a, b: jaccard_distance(failure_sets[a], failure_sets[b]), threshold
+    )
+    return [g for g in groups if len(g) >= 2]
 
 
 def cluster_similarity(cluster: list[str], failure_sets: dict) -> float:
@@ -51,6 +71,8 @@ def cluster_similarity(cluster: list[str], failure_sets: dict) -> float:
     pairs = [(a, b) for i, a in enumerate(cluster) for b in cluster[i + 1 :]]
     if not pairs:
         return 1.0
-    return sum(1 - jaccard_distance(failure_sets[a], failure_sets[b]) for a, b in pairs) / len(
-        pairs
+    total = sum(
+        1 - jaccard_distance(failure_sets.get(a, set()), failure_sets.get(b, set()))
+        for a, b in pairs
     )
+    return total / len(pairs)

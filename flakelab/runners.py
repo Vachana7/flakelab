@@ -378,5 +378,5 @@ class DockerRunner:
             self._docker("rm", "-f", name)
             result.duration = time.time() - start
         if result.oom_killed and not result.note:
-            result.note = "container was killed by the out-of-memory killer"
+            result.note = "out-of-memory kill inside the container"
         return result

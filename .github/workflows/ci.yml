@@ -83,8 +83,8 @@ jobs:
           bash "$cap/tests_test_reports.py__test_report_title/reproduce.sh" > replay.txt || true
           grep -q "FAILED tests/test_reports.py::test_report_title" replay.txt
           # Statistical verification: condition vs baseline, interleaved.
-          flakelab capsule verify "$cap/tests_test_weather.py__test_delivery_forecast" --runs 4
-          flakelab capsule verify "$cap/tests_test_inventory.py__test_reserve_stock" --runs 4
+          flakelab capsule verify "$cap/tests_test_weather.py__test_delivery_forecast" --runs 6
+          flakelab capsule verify "$cap/tests_test_inventory.py__test_reserve_stock" --runs 6
       - name: Same test through the FlakeLab container (Docker-out-of-Docker)
         run: |
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \

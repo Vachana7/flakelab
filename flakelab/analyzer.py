@@ -16,6 +16,7 @@ from collections import defaultdict
 
 from flakelab.clustering import cluster_failures, cluster_similarity
 from flakelab.conditions import HYPOTHESES, Condition
+from flakelab.dna import build_dna
 from flakelab.stats import fisher_one_sided, holm_bonferroni, runs_to_first_failure
 
 FAIL_OUTCOMES = {"failed", "error", "crashed"}
@@ -71,7 +72,10 @@ def analyze(
         tests.append(_analyze_test(nodeid, per_cond, conditions, cond_by_name, runner, alpha))
 
     clusters = _build_clusters(tests, failure_sets)
-    result = {"tests": tests, "clusters": clusters, "summary": _summary(tests, clusters)}
+    dna = build_dna(tests, conditions, dict(failure_sets), expected)
+    summary = _summary(tests, clusters)
+    summary["dna_clusters"] = len(dna["clusters"])
+    result = {"tests": tests, "clusters": clusters, "dna": dna, "summary": summary}
     if expected:
         active = {c.category for c in conditions}
         result["evaluation"] = evaluate(tests, expected, active)
@@ -254,37 +258,50 @@ def _summary(tests, clusters):
     }
 
 
+def _expected_categories(exp) -> set:
+    return set(exp) if isinstance(exp, list) else {exp}
+
+
 def evaluate(tests: list[dict], expected: dict, active_categories: set | None = None) -> dict:
     """Compare verdicts with known ground truth (only possible on test fixtures
     whose causes we planted). This checks that FlakeLab works as designed; it is
-    not evidence of how well it works on real-world projects."""
+    not evidence of how well it works on real-world projects.
+
+    Expected values: "stable", "intrinsic" (random, no environmental cause), a
+    category such as "cpu", or a list of categories for multi-factor tests.
+    """
     rows, correct, scored = [], 0, 0
-    found_by_reruns = found_by_flakelab = 0
-    sensitive = 0
+    found_by_reruns = found_by_flakelab = problems = 0
+    stable_total = stable_flagged = 0
+    env_total = env_inconclusive = env_wrong = 0
     for t in tests:
         exp = expected.get(t["nodeid"])
         if exp is None:
             continue
         v = t["verdict"]
-        if (
-            active_categories is not None
-            and exp not in ("stable", "intrinsic")
-            and exp not in active_categories
-        ):
+        cats = _expected_categories(exp)
+        env_cats = cats - {"stable", "intrinsic"}
+        if active_categories is not None and env_cats and not env_cats <= active_categories:
             rows.append(
                 {"nodeid": t["nodeid"], "expected": exp, "predicted": "not tested", "correct": None}
             )
             continue
+        predicted_cats = set(v["categories"])
         if exp == "stable":
             ok = v["level"] == "stable"
+            stable_total += 1
+            stable_flagged += v["level"] != "stable"
         elif exp == "intrinsic":
             ok = v["level"] == "unknown"
         else:
-            ok = v["level"] == "supported_hypothesis" and exp in v["categories"]
+            ok = v["level"] == "supported_hypothesis" and predicted_cats == env_cats
+            env_total += 1
+            env_inconclusive += v["level"] in ("unknown", "weak_signal", "stable")
+            env_wrong += v["level"] == "supported_hypothesis" and not ok
         scored += 1
         correct += ok
-        if exp not in ("stable",):
-            sensitive += 1
+        if exp != "stable":
+            problems += 1
             found_by_reruns += t["per_condition"]["baseline"]["failures"] > 0
             found_by_flakelab += v["level"] in ("supported_hypothesis", "unknown", "weak_signal")
         predicted = ", ".join(v["categories"]) if v["categories"] else v["level"]
@@ -294,7 +311,14 @@ def evaluate(tests: list[dict], expected: dict, active_categories: set | None = 
         "accuracy": correct / scored if scored else None,
         "correct": correct,
         "scored": scored,
-        "problem_tests": sensitive,
+        "problem_tests": problems,
         "visible_to_baseline_reruns": found_by_reruns,
         "found_by_flakelab": found_by_flakelab,
+        "stable_tests": stable_total,
+        "false_positives": stable_flagged,
+        "false_positive_rate": stable_flagged / stable_total if stable_total else None,
+        "environmental_tests": env_total,
+        "inconclusive": env_inconclusive,
+        "inconclusive_rate": env_inconclusive / env_total if env_total else None,
+        "wrong_attributions": env_wrong,
     }

@@ -43,6 +43,9 @@ class SimulatedRunner:
     def reproduce_command(self, condition, nodeid):
         return f"simulate --condition {condition.name} {nodeid}"
 
+    def environment(self):
+        return {"runner": "simulated", "project": {"python": "3.12.0"}, "network": None}
+
     def run(self, condition, index, seed):
         outcomes = {}
         # Correlated network failures: one slow-service event hits both weather tests.
@@ -54,4 +57,15 @@ class SimulatedRunner:
             else:
                 failed = self.rng.random() < p
             outcomes[nodeid] = "failed" if failed else "passed"
-        return RunResult(condition.name, index, outcomes=outcomes, duration=0.01)
+        order = list(self.profile)
+        if condition.name == "reverse_order":
+            order.reverse()
+        return RunResult(
+            condition.name,
+            index,
+            outcomes=outcomes,
+            order=order,
+            order_env=condition.full_env(index, seed)["FLAKELAB_ORDER"],
+            duration=0.01,
+            pytest_seconds=0.005,
+        )

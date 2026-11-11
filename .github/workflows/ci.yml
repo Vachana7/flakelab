@@ -71,6 +71,20 @@ jobs:
             --conditions cpu_low,memory_low,no_network \
             --out integration-results --project "CI integration"
           python scripts/check_integration.py integration-results/results.json
+      - name: Reproduction capsules on real Docker (create, replay, verify)
+        run: |
+          flakelab run --runner docker --image flakelab-demo:ci \
+            --docker-network flakelab-net --runs 6 \
+            --conditions no_network,reverse_order,timezone_ist \
+            --out capsule-results --project "CI capsules"
+          ls capsule-results/capsules
+          cap=capsule-results/capsules
+          # One-shot replay with the generated script must show the failure.
+          bash "$cap/tests_test_reports.py__test_report_title/reproduce.sh" > replay.txt || true
+          grep -q "FAILED tests/test_reports.py::test_report_title" replay.txt
+          # Statistical verification: condition vs baseline, interleaved.
+          flakelab capsule verify "$cap/tests_test_weather.py__test_delivery_forecast" --runs 4
+          flakelab capsule verify "$cap/tests_test_inventory.py__test_reserve_stock" --runs 4
       - name: Same test through the FlakeLab container (Docker-out-of-Docker)
         run: |
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
@@ -83,7 +97,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: integration-results
-          path: integration-results/
+          path: |
+            integration-results/
+            capsule-results/
 
   publish:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'

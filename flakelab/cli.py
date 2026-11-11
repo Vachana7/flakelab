@@ -24,7 +24,25 @@ from flakelab.report import render_markdown
 from flakelab.runners import DockerRunner, LocalRunner
 
 
+def _validate_run_args(args) -> str | None:
+    if args.runs < 2:
+        return "--runs must be at least 2 (one run cannot show flakiness)"
+    if args.runs > 1000:
+        return "--runs above 1000 is almost certainly a mistake"
+    if args.workers < 1:
+        return "--workers must be at least 1"
+    if not 0 < args.alpha < 1:
+        return "--alpha must be between 0 and 1"
+    if args.timeout < 1:
+        return "--timeout must be positive"
+    return None
+
+
 def _cmd_run(args) -> int:
+    problem = _validate_run_args(args)
+    if problem:
+        print(f"error: {problem}", file=sys.stderr)
+        return 2
     pytest_args = shlex.split(args.pytest_args)
     runner: DockerRunner | LocalRunner
     if args.runner == "docker":
@@ -64,6 +82,7 @@ def _cmd_run(args) -> int:
         alpha=args.alpha,
         expected=expected,
         project=project,
+        capsules=not args.no_capsules,
     )
     doc = exp.run()
     s = doc["summary"]
@@ -109,6 +128,39 @@ def _cmd_report(args) -> int:
     return 0
 
 
+def _cmd_capsule_create(args) -> int:
+    from flakelab.capsule import create_capsules
+
+    doc = json.loads(Path(args.results).read_text())
+    folders = create_capsules(doc, args.out)
+    for folder in folders:
+        print(f"wrote {folder}")
+    if not folders:
+        print("No investigated failures to package (every test was stable).")
+    return 0
+
+
+def _cmd_capsule_verify(args) -> int:
+    from flakelab.capsule import verify_capsule
+
+    if args.runs < 2:
+        print("error: --runs must be at least 2", file=sys.stderr)
+        return 2
+    folder = Path(args.folder)
+    if not (folder / "capsule.json").exists():
+        print(f"error: {folder} is not a capsule (no capsule.json)", file=sys.stderr)
+        return 2
+    capsule = json.loads((folder / "capsule.json").read_text())
+    print(
+        f"Verifying {capsule['test']} under {capsule['condition']['label']} "
+        f"({args.runs} runs per arm, interleaved with baseline)"
+    )
+    result = verify_capsule(folder, runs=args.runs)
+    print(f"\n{result['verdict'].replace('_', ' ').upper()}: {result['summary']}")
+    print(f"Original experiment: {result['original']}. Saved {folder / 'verification.json'}")
+    return 0 if result["verdict"] == "reproduced" else 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="flakelab", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -140,6 +192,7 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("--timeout", type=int, default=600, help="seconds per run")
     r.add_argument("--expected", help="JSON of known causes, for evaluation")
     r.add_argument("--project", help="project name shown in the report")
+    r.add_argument("--no-capsules", action="store_true", help="do not write reproduction capsules")
     r.add_argument(
         "--fail-on-findings",
         action="store_true",
@@ -156,6 +209,17 @@ def build_parser() -> argparse.ArgumentParser:
     rep = sub.add_parser("report", help="print the Markdown report")
     rep.add_argument("--results", default="flakelab-results/results.json")
     rep.set_defaults(func=_cmd_report)
+
+    cap = sub.add_parser("capsule", help="create or verify reproduction capsules")
+    cap_sub = cap.add_subparsers(dest="capsule_command", required=True)
+    cc = cap_sub.add_parser("create", help="write capsules from a results file")
+    cc.add_argument("--results", default="flakelab-results/results.json")
+    cc.add_argument("--out", default="flakelab-results/capsules")
+    cc.set_defaults(func=_cmd_capsule_create)
+    cv = cap_sub.add_parser("verify", help="re-run a capsule and check it reproduces")
+    cv.add_argument("folder", help="capsule folder (contains capsule.json)")
+    cv.add_argument("--runs", type=int, default=10, help="runs per arm (default 10)")
+    cv.set_defaults(func=_cmd_capsule_verify)
     return p
 
 

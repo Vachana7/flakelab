@@ -52,6 +52,7 @@ class Experiment:
         expected: dict | None = None,
         project: str = "",
         log=print,
+        capsules: bool = True,
     ):
         self.runner = runner
         self.conditions = conditions
@@ -68,6 +69,10 @@ class Experiment:
         self.results: list[dict] = []
         self.lock = threading.Lock()
         self.started = _now()
+        self.make_capsules = capsules
+        self.environment: dict = {}
+        self.timing: dict = {}
+        self.capsules: list[dict] = []
 
     def _meta(self, status: str, total: int) -> dict:
         return {
@@ -91,6 +96,8 @@ class Experiment:
                     "label": c.label,
                     "category": c.category,
                     "description": c.description,
+                    "docker_args": list(c.docker_args),
+                    "env": dict(c.env),
                 }
                 for c in self.active
             ],
@@ -102,6 +109,9 @@ class Experiment:
                 }
                 for c in self.skipped
             ],
+            "environment": self.environment,
+            "timing": self.timing,
+            "capsules": self.capsules,
         }
 
     def _write(self, status: str, total: int) -> dict:
@@ -128,8 +138,15 @@ class Experiment:
             f"FlakeLab {__version__}: {total} runs "
             f"({len(self.active)} conditions x {self.runs}) on {self.runner.describe()}"
         )
+        if hasattr(self.runner, "environment"):
+            self.log("Recording the environment (image, Python, packages, host)...")
+            try:
+                self.environment = self.runner.environment()
+            except Exception as exc:  # never let bookkeeping stop an experiment
+                self.environment = {"error": f"could not record environment: {exc}"}
         self._write("running", total)
         start = time.time()
+        cpu_start = _process_cpu_seconds()
 
         def one(item):
             cond, i = item
@@ -148,6 +165,65 @@ class Experiment:
         with ThreadPoolExecutor(max_workers=self.workers) as pool:
             list(pool.map(one, schedule))
 
+        self.timing = _timing(self.results, time.time() - start, cpu_start)
         doc = self._write("done", total)
+        if self.make_capsules:
+            from flakelab.capsule import create_capsules  # avoid an import cycle
+
+            folders = create_capsules(doc, self.out / "capsules")
+            self.capsules = [
+                {
+                    "test": json.loads((f / "capsule.json").read_text())["test"],
+                    "path": f"capsules/{f.name}",
+                }
+                for f in folders
+            ]
+            doc = self._write("done", total)
+            self.log(f"Wrote {len(folders)} reproduction capsules to {self.out / 'capsules'}")
         self.log(f"Done in {time.time() - start:.0f}s. Results: {self.out / 'results.json'}")
         return doc
+
+
+def _process_cpu_seconds() -> float | None:
+    """CPU time used by FlakeLab's own process (not the tests). Unix only."""
+    try:
+        import resource
+    except ImportError:  # Windows
+        return None
+    usage = resource.getrusage(resource.RUSAGE_SELF)
+    return usage.ru_utime + usage.ru_stime
+
+
+def _max_rss_mb() -> float | None:
+    try:
+        import resource
+        import sys
+    except ImportError:
+        return None
+    rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    # Linux reports kilobytes, macOS bytes.
+    return round(rss / (1024 * 1024 if sys.platform == "darwin" else 1024), 1)
+
+
+def _timing(results: list[dict], wall: float, cpu_start: float | None) -> dict:
+    """Measured cost of the experiment, so overhead is reported, not guessed."""
+    durations = [r["duration"] for r in results]
+    inside = [r["pytest_seconds"] for r in results if r.get("pytest_seconds") is not None]
+    overheads = [
+        r["duration"] - r["pytest_seconds"] for r in results if r.get("pytest_seconds") is not None
+    ]
+    cpu_end = _process_cpu_seconds()
+    mean = lambda xs: round(sum(xs) / len(xs), 3) if xs else None  # noqa: E731
+    return {
+        "wall_seconds": round(wall, 2),
+        "runs": len(results),
+        "mean_run_seconds": mean(durations),
+        "mean_pytest_seconds": mean(inside),
+        "mean_overhead_seconds": mean(overheads),
+        "overhead_note": "overhead = run wall time minus time inside pytest "
+        "(container create/start/copy/remove for Docker; interpreter start for local)",
+        "flakelab_cpu_seconds": round(cpu_end - cpu_start, 2)
+        if cpu_end is not None and cpu_start is not None
+        else None,
+        "flakelab_max_rss_mb": _max_rss_mb(),
+    }

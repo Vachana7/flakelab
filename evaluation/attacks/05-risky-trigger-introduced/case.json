@@ -1,0 +1,7 @@
+{
+  "title": "Workflow gains pull_request_target and checks out the visitor's code (the setup later abused by 'pwn request' attacks)",
+  "source": "https://vpncentral.com/new-github-actions-attack-chain-hides-in-fake-ci-updates-to-steal-secrets-and-tokens/",
+  "workflow_change_visible": true,
+  "note": "This is the change that creates the weakness, not the later attack.",
+  "kind": "reconstruction from a public description; addresses replaced with .invalid names"
+}

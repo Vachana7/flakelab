@@ -1,0 +1,7 @@
+{
+  "title": "New workflow decodes and runs a hidden script (Megalodon 2026 shape)",
+  "source": "https://www.stepsecurity.io/blog/megalodon-mass-github-actions-secret-exfiltration-across-5-500-public-repositories",
+  "workflow_change_visible": true,
+  "note": "The public write-up says the step held a base64-encoded script that was decoded and run, and that the destination was inside the script. The encoded text here is a harmless placeholder. The original trigger and permissions were not published in the source read.",
+  "kind": "reconstruction from a public description; addresses replaced with .invalid names"
+}

@@ -1,0 +1,7 @@
+{
+  "title": "Attack on an already risky pull_request_target workflow",
+  "source": "https://vpncentral.com/new-github-actions-attack-chain-hides-in-fake-ci-updates-to-steal-secrets-and-tokens/",
+  "workflow_change_visible": false,
+  "note": "At attack time the attacker's pull request changes ordinary code, not a workflow file, so there is nothing for PipeDelta to compare.",
+  "kind": "reconstruction from a public description; addresses replaced with .invalid names"
+}

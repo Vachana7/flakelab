@@ -1,0 +1,13 @@
+# The same goal as after-attack.yml (use an outside formatting tool), done carefully:
+# no risky trigger, read-only token, no secret, and the outside code locked to one commit.
+name: CI
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: some-stranger/format-helper@3f2a9c1d8b7e6f5a4c3b2a1908f7e6d5c4b3a291
+      - run: python -m pytest

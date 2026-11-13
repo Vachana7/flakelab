@@ -1,0 +1,7 @@
+{
+  "title": "Secret sent to an address that is not written in the file",
+  "source": "(variation of case 01 written for this evaluation)",
+  "workflow_change_visible": true,
+  "note": "Tests the known limit: the address comes from a repository variable.",
+  "kind": "reconstruction from a public description; addresses replaced with .invalid names"
+}

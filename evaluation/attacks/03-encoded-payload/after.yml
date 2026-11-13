@@ -1,0 +1,9 @@
+name: SysDiag
+on:
+  push:
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run diagnostics
+        run: echo "ZWNobyBoYXJtbGVzcyBwbGFjZWhvbGRlcg==" | base64 -d | bash

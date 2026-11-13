@@ -22,6 +22,13 @@ UNTRUSTED_RE = re.compile(
     r"\$\{\{\s*github\.(event\.(issue|pull_request|comment|review|head_commit|discussion)"
     r"[A-Za-z0-9_.]*|head_ref)\s*\}\}"
 )
+# ${{ toJSON(secrets) }} hands over every secret at once
+ALL_SECRETS_RE = re.compile(r"toJSON\(\s*secrets\s*\)", re.IGNORECASE)
+# text that is decoded and immediately run, so a reviewer cannot read what it does
+HIDDEN_RE = re.compile(
+    r"base64\s+(-d|-D|--decode)\b[^\n]*\|\s*(ba|z)?sh\b"
+    r"|eval\s+[\"']?\$\([^)]*base64\s+(-d|-D|--decode)"
+)
 # a 40-character commit id means the action version cannot be swapped later
 PINNED_RE = re.compile(r"@[0-9a-f]{40}$")
 
@@ -32,9 +39,26 @@ RISKY_TRIGGERS = {"pull_request_target", "workflow_run", "issue_comment"}
 
 @dataclass(frozen=True, order=True)
 class Power:
-    kind: str  # trigger, permission, secret, action, network, injection, runner
+    kind: str  # trigger, permission, secret, action, network, injection, runner, hidden
     name: str  # the specific thing, e.g. "AWS_KEY" or "contents: write"
     where: str = "workflow"  # which job it was found in
+
+
+NO_LIMIT = "repository default (no limit set in the file)"
+BUILT_IN_TOKEN = "GITHUB_TOKEN"
+
+_CONTROL_RE = re.compile(r"[\x00-\x1f\x7f-\x9f\u200b-\u200f\u2028-\u202e]")
+
+
+def clean(text: object) -> str:
+    """Make text taken from a workflow file safe to print.
+
+    Job names, action names and trigger names are written by whoever made the
+    change, who may be an attacker. Control characters could fake lines in a
+    terminal, so they are removed, and very long names are cut.
+    """
+    out = _CONTROL_RE.sub(" ", str(text)).strip()
+    return out if len(out) <= 100 else out[:97] + "..."
 
 
 def _as_list(value: Any) -> list[Any]:
@@ -59,10 +83,10 @@ def _permissions(value: Any, where: str) -> list[Power]:
     if value is None:
         return []
     if isinstance(value, str):  # "write-all" or "read-all"
-        return [Power("permission", value, where)]
+        return [Power("permission", clean(value), where)]
     if isinstance(value, dict):
         return [
-            Power("permission", f"{scope}: {level}", where)
+            Power("permission", clean(f"{scope}: {level}"), where)
             for scope, level in value.items()
             if level != "none"
         ]
@@ -80,6 +104,16 @@ def _strings(node: Any) -> list[str]:
     return []
 
 
+ALL_SECRETS = "(every secret at once)"
+
+
+def _secret_names(text: str) -> list[str]:
+    names = SECRET_RE.findall(text)
+    if ALL_SECRETS_RE.search(text):
+        names.append(ALL_SECRETS)
+    return names
+
+
 def extract_powers(text: str) -> set[Power]:
     """Return the set of powers found in one workflow file's text."""
     doc = yaml.safe_load(text)
@@ -89,9 +123,10 @@ def extract_powers(text: str) -> set[Power]:
     powers: set[Power] = set()
 
     for trigger in _triggers(doc):
-        powers.add(Power("trigger", trigger))
+        powers.add(Power("trigger", clean(trigger)))
 
     powers.update(_permissions(doc.get("permissions"), "workflow"))
+    limited_for_all_jobs = "permissions" in doc
 
     jobs = doc.get("jobs")
     if not isinstance(jobs, dict):
@@ -99,26 +134,36 @@ def extract_powers(text: str) -> set[Power]:
 
     # Secrets set at the top of the file are visible to every job.
     for s in _strings(doc.get("env")):
-        for name in SECRET_RE.findall(s):
+        for name in _secret_names(s):
             powers.add(Power("secret", name, "workflow"))
 
     for job_name, job in jobs.items():
         if not isinstance(job, dict):
             continue
-        where = str(job_name)
+        where = clean(job_name)
         powers.update(_permissions(job.get("permissions"), where))
+        if not limited_for_all_jobs and "permissions" not in job:
+            # With no limit written anywhere, the token gets whatever the
+            # repository's default is, which can include write access.
+            powers.add(Power("permission", NO_LIMIT, where))
 
-        for label in _as_list(job.get("runs-on")):
+        runs_on = job.get("runs-on")
+        if isinstance(runs_on, dict):  # the "group / labels" form
+            runs_on = runs_on.get("labels")
+        for label in _as_list(runs_on):
             if isinstance(label, str) and "self-hosted" in label:
                 powers.add(Power("runner", "self-hosted", where))
 
-        if isinstance(job.get("uses"), str):  # a reusable workflow
-            powers.add(Power("action", job["uses"], where))
+        reusable = job.get("uses")
+        # A reusable workflow from another repository is outside code.
+        # One that starts with "./" lives in this repository and is reviewed here.
+        if isinstance(reusable, str) and not reusable.startswith("./"):
+            powers.add(Power("action", clean(reusable), where))
         if job.get("secrets") == "inherit":
             powers.add(Power("secret", "(all secrets, inherited)", where))
 
         for s in _strings(job):
-            for name in SECRET_RE.findall(s):
+            for name in _secret_names(s):
                 powers.add(Power("secret", name, where))
 
         for step in _as_list(job.get("steps")):
@@ -126,11 +171,13 @@ def extract_powers(text: str) -> set[Power]:
                 continue
             uses = step.get("uses")
             if isinstance(uses, str) and not uses.startswith("./"):
-                powers.add(Power("action", uses, where))
+                powers.add(Power("action", clean(uses), where))
             run = step.get("run")
             if isinstance(run, str):
                 for host in URL_RE.findall(run):
                     powers.add(Power("network", host.lower().rstrip("."), where))
+                if HIDDEN_RE.search(run):
+                    powers.add(Power("hidden", "decodes hidden text and runs it", where))
                 if UNTRUSTED_RE.search(run):
                     powers.add(
                         Power(
@@ -142,6 +189,11 @@ def extract_powers(text: str) -> set[Power]:
 
 def is_pinned(action: str) -> bool:
     return bool(PINNED_RE.search(action)) or action.startswith("docker://") and "@sha256:" in action
+
+
+def action_name(action: str) -> str:
+    """The action without its version: 'owner/tool@v1' -> 'owner/tool'."""
+    return action.split("@", 1)[0].lower()
 
 
 def action_owner(action: str) -> str:

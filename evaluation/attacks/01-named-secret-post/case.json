@@ -1,0 +1,7 @@
+{
+  "title": "New workflow posts a named secret to an outside address (GhostAction 2025 shape)",
+  "source": "https://blog.gitguardian.com/ghostaction-campaign-3-325-secrets-stolen/",
+  "workflow_change_visible": true,
+  "note": "Structure follows the workflow published by GitGuardian. The new file is added next to existing workflows.",
+  "kind": "reconstruction from a public description; addresses replaced with .invalid names"
+}

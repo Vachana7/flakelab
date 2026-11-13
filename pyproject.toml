@@ -1,0 +1,22 @@
+[project]
+name = "pipedelta"
+version = "0.1.0"
+description = "Report what new powers a change gives a GitHub Actions pipeline"
+requires-python = ">=3.10"
+dependencies = ["pyyaml>=6"]
+
+[project.scripts]
+pipedelta = "pipedelta.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["pipedelta"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

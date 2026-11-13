@@ -45,6 +45,16 @@ jobs:
           test "$code" -eq 1
       - name: The container lets an ordinary change through
         run: docker run --rm -v "$PWD/examples:/data:ro" pipedelta:ci diff /data/before.yml /data/after-safe.yml
+      - name: The offline demo (Docker Compose) behaves as the demo script says
+        run: |
+          docker compose build -q
+          docker compose run --rm safe
+          docker compose run --rm fixed
+          set +e
+          docker compose run --rm attack
+          code=$?
+          set -e
+          test "$code" -eq 1
 
   publish:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'

@@ -131,3 +131,11 @@ def test_action_mode_on_a_real_git_history(tmp_path, monkeypatch, capsys):
     assert "PipeDelta report" in summary.read_text()
     assert "level=high" in output.read_text()
     assert main(["action", "--fail-on", "never"]) == 0
+
+
+def test_fixed_version_is_medium_and_passes_the_default_gate():
+    fixed = (EX / "after-fixed.yml").read_text()
+    findings = compare(BEFORE, fixed)
+    assert overall(findings) == "medium"
+    assert len(findings) == 1
+    assert main(["diff", str(EX / "before.yml"), str(EX / "after-fixed.yml")]) == 0

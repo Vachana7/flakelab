@@ -1,0 +1,21 @@
+# Offline demo. Needs only Docker, no internet after the first build.
+#   docker compose run --rm safe      -> passes
+#   docker compose run --rm attack    -> blocked (exit code 1)
+#   docker compose run --rm fixed     -> passes with a warning
+x-pipedelta: &pipedelta
+  build: .
+  image: pipedelta:local
+  volumes:
+    - ./examples:/data:ro
+  network_mode: none
+
+services:
+  safe:
+    <<: *pipedelta
+    command: ["diff", "/data/before.yml", "/data/after-safe.yml"]
+  attack:
+    <<: *pipedelta
+    command: ["diff", "/data/before.yml", "/data/after-attack.yml"]
+  fixed:
+    <<: *pipedelta
+    command: ["diff", "/data/before.yml", "/data/after-fixed.yml"]

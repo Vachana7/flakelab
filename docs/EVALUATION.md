@@ -8,16 +8,21 @@ must not be combined.
 
 ## Summary
 
-| | Version 0.1 | Version 0.2 |
+| | Version 0.1 | Version 0.3 |
 |---|---|---|
 | Attack cases blocked at the default gate | 6 of 12 | 8 of 12 |
 | Same, counting only cases where a workflow file changes | 6 of 10 | 8 of 10 |
-| Real past workflow commits blocked at the default gate | 384 of 1659 (23.1%) | 164 of 1659 (9.9%) |
+| Real past workflow commits blocked at the default gate | 384 of 1659 (23.1%) | 157 of 1659 (9.5%) |
+
+Version 0.3 is version 0.1 plus two rounds of changes. Version 0.2 changed the
+rules after the first test run (its result files are kept in `evaluation/results/`:
+8 of 10 attack cases, 164 of 1659 commits). Version 0.3 fixed eight bugs found in a
+code review, listed in `tests/test_bugfixes.py`.
 
 Version 0.2 was written **after** looking at the version 0.1 results. Two of its
 rules (hidden decoded commands, and `toJSON(secrets)`) were added because cases 03
-and 04 were missed. So the version 0.2 attack score is not independent evidence:
-the tool was adjusted to those cases. The fair statement is that version 0.1,
+and 04 were missed. So the version 0.3 attack score is not independent evidence:
+the tool was adjusted to those cases, and version 0.3 inherits that. The fair statement is that version 0.1,
 written before any testing, blocked 6 of 10.
 
 ## Test 1: reconstructed attack cases
@@ -30,7 +35,7 @@ this project from public descriptions, with harmless placeholder addresses. They
 not the original malicious files, and twelve cases is a small set chosen by the
 author of the tool. Each `case.json` names its source.
 
-| Case | What it is | v0.1 | v0.2 |
+| Case | What it is | v0.1 | v0.3 |
 |---|---|---|---|
 | 01 | New workflow posts a named secret to an outside address (GhostAction 2025 shape) | blocked | blocked |
 | 02 | New workflow sends named secrets over plain HTTP (GhostAction 2026 shape) | blocked | blocked |
@@ -65,31 +70,31 @@ skipped because a workflow file was not valid YAML at that point.
 
 | Project | Commit studied up to | Workflow commits | No new power | Low | Medium | High (blocked) |
 |---|---|---|---|---|---|---|
-| flask | `49943b5a94` | 99 | 42 | 50 | 2 | 5 |
-| requests | `3c7baaa05a` | 107 | 38 | 62 | 0 | 7 |
-| httpx | `b5addb64f0` | 28 | 18 | 9 | 1 | 0 |
-| rich | `3a109ccdff` | 123 | 88 | 22 | 3 | 10 |
-| black | `cf3e093897` | 277 | 93 | 163 | 2 | 17 |
-| pydantic | `560f0f96a3` | 423 | 220 | 140 | 16 | 45 |
-| pytest | `fc9a7ef678` | 255 | 96 | 136 | 6 | 17 |
-| fastapi | `5758a9c834` | 351 | 144 | 124 | 20 | 63 |
-| **Total** | | 1663 | 739 | 706 | 50 | 164 |
+| flask | `49943b5a94` | 99 | 42 | 50 | 3 | 4 |
+| requests | `3c7baaa05a` | 107 | 38 | 60 | 2 | 7 |
+| httpx | `b5addb64f0` | 28 | 18 | 8 | 2 | 0 |
+| rich | `3a109ccdff` | 123 | 88 | 20 | 5 | 10 |
+| black | `cf3e093897` | 277 | 94 | 157 | 9 | 15 |
+| pydantic | `560f0f96a3` | 423 | 224 | 139 | 17 | 41 |
+| pytest | `fc9a7ef678` | 255 | 96 | 137 | 5 | 17 |
+| fastapi | `5758a9c834` | 351 | 144 | 125 | 19 | 63 |
+| **Total** | | 1663 | 744 | 696 | 62 | 157 |
 
-At the default setting PipeDelta 0.2 would have blocked 164 of 1659 commits
-(9.9%). Version 0.1 blocked 384 (23.1%); most of the
+At the default setting PipeDelta 0.3 would have blocked 157 of 1659 commits
+(9.5%). Version 0.1 blocked 384 (23.1%); most of the
 difference came from no longer treating a version bump of an action already in use,
 or a renamed job, as a new power.
 
-Why the blocked commits were blocked (counted per high-level finding, version 0.2):
+Why the blocked commits were blocked (counted per high-level finding, version 0.3):
 
 | Reason | Findings |
 |---|---|
-| outside action not locked to a commit | 272 |
-| write permission | 103 |
-| secret and new network address in the same job | 14 |
+| outside action not locked to a commit | 250 |
+| write permission | 101 |
 | trigger pull_request_target | 14 |
-| trigger workflow_run | 6 |
+| secret and new network address in the same job | 12 |
 | injection | 4 |
+| trigger workflow_run | 4 |
 | trigger issue_comment | 3 |
 
 How to read this:
@@ -116,9 +121,9 @@ How to read this:
 ## Reproduce
 
     pip install -e .
-    python evaluation/run_attacks.py evaluation/results/attacks-v0.2.json
+    python evaluation/run_attacks.py evaluation/results/attacks-v0.3.json
     git clone --no-checkout https://github.com/pallets/flask /tmp/hist/flask   # and the others
-    python evaluation/run_history.py evaluation/results/history-v0.2.json /tmp/hist/*
+    python evaluation/run_history.py evaluation/results/history-v0.3.json /tmp/hist/*
     python evaluation/write_report.py
 
-The version 0.1 result files were produced by commit `6492d9f`.
+The version 0.1 result files were produced by commit `6492d9f` and the version 0.2 files by commit `2666b68`.

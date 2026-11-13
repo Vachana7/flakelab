@@ -44,6 +44,23 @@ class Power:
     where: str = "workflow"  # which job it was found in
 
 
+NO_LIMIT = "repository default (no limit set in the file)"
+BUILT_IN_TOKEN = "GITHUB_TOKEN"
+
+_CONTROL_RE = re.compile(r"[\x00-\x1f\x7f-\x9f\u200b-\u200f\u2028-\u202e]")
+
+
+def clean(text: object) -> str:
+    """Make text taken from a workflow file safe to print.
+
+    Job names, action names and trigger names are written by whoever made the
+    change, who may be an attacker. Control characters could fake lines in a
+    terminal, so they are removed, and very long names are cut.
+    """
+    out = _CONTROL_RE.sub(" ", str(text)).strip()
+    return out if len(out) <= 100 else out[:97] + "..."
+
+
 def _as_list(value: Any) -> list[Any]:
     if value is None:
         return []
@@ -66,10 +83,10 @@ def _permissions(value: Any, where: str) -> list[Power]:
     if value is None:
         return []
     if isinstance(value, str):  # "write-all" or "read-all"
-        return [Power("permission", value, where)]
+        return [Power("permission", clean(value), where)]
     if isinstance(value, dict):
         return [
-            Power("permission", f"{scope}: {level}", where)
+            Power("permission", clean(f"{scope}: {level}"), where)
             for scope, level in value.items()
             if level != "none"
         ]
@@ -106,9 +123,10 @@ def extract_powers(text: str) -> set[Power]:
     powers: set[Power] = set()
 
     for trigger in _triggers(doc):
-        powers.add(Power("trigger", trigger))
+        powers.add(Power("trigger", clean(trigger)))
 
     powers.update(_permissions(doc.get("permissions"), "workflow"))
+    limited_for_all_jobs = "permissions" in doc
 
     jobs = doc.get("jobs")
     if not isinstance(jobs, dict):
@@ -122,15 +140,25 @@ def extract_powers(text: str) -> set[Power]:
     for job_name, job in jobs.items():
         if not isinstance(job, dict):
             continue
-        where = str(job_name)
+        where = clean(job_name)
         powers.update(_permissions(job.get("permissions"), where))
+        if not limited_for_all_jobs and "permissions" not in job:
+            # With no limit written anywhere, the token gets whatever the
+            # repository's default is, which can include write access.
+            powers.add(Power("permission", NO_LIMIT, where))
 
-        for label in _as_list(job.get("runs-on")):
+        runs_on = job.get("runs-on")
+        if isinstance(runs_on, dict):  # the "group / labels" form
+            runs_on = runs_on.get("labels")
+        for label in _as_list(runs_on):
             if isinstance(label, str) and "self-hosted" in label:
                 powers.add(Power("runner", "self-hosted", where))
 
-        if isinstance(job.get("uses"), str):  # a reusable workflow
-            powers.add(Power("action", job["uses"], where))
+        reusable = job.get("uses")
+        # A reusable workflow from another repository is outside code.
+        # One that starts with "./" lives in this repository and is reviewed here.
+        if isinstance(reusable, str) and not reusable.startswith("./"):
+            powers.add(Power("action", clean(reusable), where))
         if job.get("secrets") == "inherit":
             powers.add(Power("secret", "(all secrets, inherited)", where))
 
@@ -143,7 +171,7 @@ def extract_powers(text: str) -> set[Power]:
                 continue
             uses = step.get("uses")
             if isinstance(uses, str) and not uses.startswith("./"):
-                powers.add(Power("action", uses, where))
+                powers.add(Power("action", clean(uses), where))
             run = step.get("run")
             if isinstance(run, str):
                 for host in URL_RE.findall(run):

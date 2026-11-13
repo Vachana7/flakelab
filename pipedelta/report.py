@@ -35,8 +35,17 @@ def render_text(results: Results) -> str:
 
 
 def _cell(text: str) -> str:
-    """Make text safe to place inside a Markdown table cell."""
-    return text.replace("|", "\\|").replace("\n", " ").replace("<", "&lt;")
+    """Make text safe to place inside a Markdown table cell.
+
+    Parts of the sentence (job names, action names) come from the change being
+    reviewed. Without this, a job named like a link or an @mention would
+    become a real link or notify people from the comment.
+    """
+    text = text.replace("\\", "\\\\").replace("\n", " ")
+    for char in "|`*_[]<>~#!":
+        text = text.replace(char, "\\" + char)
+    text = text.replace("@", "@\u200b")
+    return text.replace("://", ":\u200b//")
 
 
 def render_markdown(results: Results) -> str:
@@ -55,7 +64,8 @@ def render_markdown(results: Results) -> str:
     for path, findings in results.items():
         if not findings:
             continue
-        lines += ["", f"### `{path}`", "", "| Level | New power |", "|---|---|"]
+        safe_path = path.replace("`", "'").replace("\n", " ")
+        lines += ["", f"### `{safe_path}`", "", "| Level | New power |", "|---|---|"]
         for f in findings:
             lines.append(f"| {f.level} | {_cell(f.message)} |")
     lines += [

@@ -41,14 +41,29 @@ def study(repo: str) -> dict[str, object]:
         parent = f"{commit}^"
         if git(repo, "rev-parse", "--verify", "-q", parent).returncode != 0:
             parent = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"  # git's empty tree
-        files = git(repo, "diff", "--name-only", parent, commit, "--", WF).stdout.splitlines()
+        listing = git(repo, "diff", "--name-status", "-M", "-z", parent, commit, "--", WF).stdout
+        parts = [part for part in listing.split("\0") if part]
+        pairs: list[tuple[str, str]] = []
+        i = 0
+        while i < len(parts):
+            if parts[i].startswith("R") and i + 2 < len(parts):
+                pairs.append((parts[i + 1], parts[i + 2]))
+                i += 3
+            elif parts[i].startswith("C") and i + 2 < len(parts):
+                pairs.append((parts[i + 2], parts[i + 2]))
+                i += 3
+            elif i + 1 < len(parts):
+                pairs.append((parts[i + 1], parts[i + 1]))
+                i += 2
+            else:
+                break
         findings = []
         bad = False
-        for path in files:
+        for old_path, path in pairs:
             if not path.endswith((".yml", ".yaml")):
                 continue
             try:
-                findings += compare(show(repo, parent, path), show(repo, commit, path))
+                findings += compare(show(repo, parent, old_path), show(repo, commit, path))
             except yaml.YAMLError:
                 bad = True
             except Exception:  # noqa: BLE001 - a bug in PipeDelta; count it honestly

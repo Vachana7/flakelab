@@ -36,12 +36,43 @@ def _git_show(ref: str, path: str) -> str | None:
 
 
 def compare_commits(base: str, head: str) -> dict[str, list[Finding]]:
+    """Compare every workflow file that differs between two commits.
+
+    A renamed file is compared with its old self, so a rename alone does not
+    make every power in the file look new.
+    """
     results: dict[str, list[Finding]] = {}
-    changed = _git("diff", "--name-only", base, head, "--", WORKFLOW_DIR)
-    for path in changed.splitlines():
-        if path.endswith((".yml", ".yaml")):
-            results[path] = compare(_git_show(base, path), _git_show(head, path))
+    listing = _git("diff", "--name-status", "-M", "-z", base, head, "--", WORKFLOW_DIR)
+    parts = [part for part in listing.split("\0") if part]
+    index = 0
+    while index < len(parts):
+        status = parts[index]
+        if status.startswith(("R", "C")) and index + 2 < len(parts):
+            old_path, new_path = parts[index + 1], parts[index + 2]
+            index += 3
+            if status.startswith("C"):
+                old_path = new_path  # a copy is a new file
+        elif index + 1 < len(parts):
+            old_path = new_path = parts[index + 1]
+            index += 2
+        else:
+            break
+        if new_path.startswith(WORKFLOW_DIR) and new_path.endswith((".yml", ".yaml")):
+            results[new_path] = compare(_git_show(base, old_path), _git_show(head, new_path))
     return results
+
+
+def _merge_base(base: str, head: str) -> str:
+    """The commit where the pull request branched off.
+
+    Comparing against the tip of the target branch would blame the pull
+    request for anything the target branch removed in the meantime.
+    """
+    result = subprocess.run(
+        ["git", "merge-base", base, head], capture_output=True, text=True, check=False
+    )
+    found = result.stdout.strip()
+    return found if result.returncode == 0 and found else base
 
 
 def _exit_code(results: dict[str, list[Finding]], fail_on: str) -> int:
@@ -74,7 +105,8 @@ def _run_action(fail_on: str) -> int:
         print("pipedelta: this event is not a pull request, nothing to compare.")
         return 0
 
-    results = compare_commits(pr["base"]["sha"], pr["head"]["sha"])
+    head = pr["head"]["sha"]
+    results = compare_commits(_merge_base(pr["base"]["sha"], head), head)
     print(render_text(results))
     markdown = render_markdown(results)
 
@@ -123,7 +155,7 @@ def main(argv: list[str] | None = None) -> int:
             return _run_action(args.fail_on)
         else:
             results = compare_commits(args.base, args.head)
-    except (OSError, KeyError, subprocess.CalledProcessError) as error:
+    except (OSError, KeyError, UnicodeDecodeError, subprocess.CalledProcessError) as error:
         print(f"pipedelta: {error}", file=sys.stderr)
         return 2
     except yaml.YAMLError as error:

@@ -106,8 +106,8 @@ def history_table(history) -> str:
 
 
 def main() -> None:
-    a1, a2 = load("attacks-v0.1.json"), load("attacks-v0.2.json")
-    h1, h2 = load("history-v0.1.json"), load("history-v0.2.json")
+    a1, a2 = load("attacks-v0.1.json"), load("attacks-v0.3.json")
+    h1, h2 = load("history-v0.1.json"), load("history-v0.3.json")
 
     def blocked(rows):
         vis = [r for r in rows if r["visible"]]
@@ -258,10 +258,10 @@ footer{margin-top:56px;color:var(--ink2);font-size:.88rem}
 <p class="muted">This example is a harmless imitation. The action and the address in it do not exist. The report on the right is the tool's real output for the change on the left.</p>
 
 <h2>How well does it work?</h2>
-<p>Two separate tests. Version 0.2 was written after looking at the version 0.1 results, so its attack score is not independent evidence.</p>
+<p>Two separate tests. Version 0.3 was written after looking at the version 0.1 results, so its attack score is not independent evidence.</p>
 <div class="tiles">
   <div class="tile"><b>{{B1}} of {{NV}}</b><span>attack cases blocked by the first version, written before any testing</span></div>
-  <div class="tile"><b>{{B2}} of {{NV}}</b><span>blocked by version 0.2, after two rules were added for the misses</span></div>
+  <div class="tile"><b>{{B2}} of {{NV}}</b><span>blocked by version 0.3, after two rules were added for the misses and bugs were fixed</span></div>
   <div class="tile"><b>{{P2}}%</b><span>of {{N2}} real past pipeline changes would have been blocked ({{P1}}% in the first version)</span></div>
 </div>
 
@@ -269,7 +269,7 @@ footer{margin-top:56px;color:var(--ink2);font-size:.88rem}
 <p>{{NALL}} cases written for this project from public reports of real attacks, with placeholder addresses. They are not the original malicious files. In two of them nothing changes in the victim's workflow file, so no tool of this kind can see them.</p>
 <div class="card">
 <table>
-<thead><tr><th>#</th><th>Case</th><th>Version 0.1</th><th>Version 0.2</th></tr></thead>
+<thead><tr><th>#</th><th>Case</th><th>Version 0.1</th><th>Version 0.3</th></tr></thead>
 <tbody>
 {{ATTACKS}}
 </tbody>
@@ -289,7 +289,7 @@ footer{margin-top:56px;color:var(--ink2);font-size:.88rem}
 </div>
 <p>These commits are not labelled, so {{P2}}% is a block rate, not a false-alarm rate. None of them is a known attack. About one in ten is too many for a strict gate on a busy project; today the tool fits best as an advisory comment.</p>
 <div class="card">
-<table class="num"><thead><tr><th>Why commits were blocked (high-level findings, version 0.2)</th><th>Findings</th></tr></thead>
+<table class="num"><thead><tr><th>Why commits were blocked (high-level findings, version 0.3)</th><th>Findings</th></tr></thead>
 <tbody>
 {{REASONS}}
 </tbody></table>

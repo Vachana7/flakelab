@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from .powers import (
+    BUILT_IN_TOKEN,
+    NO_LIMIT,
     RISKY_TRIGGERS,
     Power,
     action_name,
@@ -40,11 +42,27 @@ def _explain(power: Power, after: set[Power]) -> Finding:
             )
         return Finding("low", power, f"Now also runs on '{name}'.")
 
+    if kind == "permission" and name == NO_LIMIT:
+        return Finding(
+            "medium",
+            power,
+            f"In {place}, no limit is set on the pipeline token, so it gets the "
+            "repository's default permissions, which may include changing the repository.",
+        )
+
     if kind == "permission":
         writes = name == "write-all" or name.endswith(": write")
         level = "high" if writes else "low"
         verb = "change" if writes else "read"
         return Finding(level, power, f"In {place}, the pipeline token can now {verb}: {name}.")
+
+    if kind == "secret" and name == BUILT_IN_TOKEN:
+        return Finding(
+            "low",
+            power,
+            f"In {place}, now passes the pipeline's own token (GITHUB_TOKEN) to a step. "
+            "What it can do is set by the permissions.",
+        )
 
     if kind == "secret":
         return Finding("medium", power, f"In {place}, can now read the secret {name}.")

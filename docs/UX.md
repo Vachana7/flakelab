@@ -92,7 +92,7 @@ from "tempted to trust it" to "has something specific to ask".
     | +---------------------------+------------------------------+ |
     |                                                              |
     | How well does it work?                                       |
-    | [ 6 of 10 ]   [ 8 of 10 ]   [ 9.9% ]                         |
+    | [ 6 of 10 ]   [ 8 of 10 ]   [ 9.5% ]                         |
     |                                                              |
     | Test 1: table of attack cases, blocked / missed / cannot see |
     | Test 2: one bar per project, split by level                  |

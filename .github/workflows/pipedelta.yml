@@ -1,0 +1,28 @@
+name: PipeDelta
+
+# Runs PipeDelta on this repository's own pull requests.
+# "pull_request" (not "pull_request_target") is used on purpose: a pull request
+# from a stranger then gets a read-only token and no secrets.
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/**"
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./
+        with:
+          fail-on: high
+          token: ${{ github.token }}

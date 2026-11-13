@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install pyyaml pytest ruff mypy types-PyYAML
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: mypy pipedelta
+      - run: pytest -q
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Build the image
+        run: docker build -t pipedelta:ci .
+      - name: The container flags the imitation attack
+        run: |
+          set +e
+          docker run --rm -v "$PWD/examples:/data:ro" pipedelta:ci diff /data/before.yml /data/after-attack.yml
+          code=$?
+          set -e
+          test "$code" -eq 1
+      - name: The container lets an ordinary change through
+        run: docker run --rm -v "$PWD/examples:/data:ro" pipedelta:ci diff /data/before.yml /data/after-safe.yml
+
+  publish:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: docker
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push
+        env:
+          IMAGE: ghcr.io/vachana7/pipedelta
+          SHA: ${{ github.sha }}
+        run: |
+          docker build -t "$IMAGE:latest" -t "$IMAGE:$SHA" .
+          docker push "$IMAGE:latest"
+          docker push "$IMAGE:$SHA"

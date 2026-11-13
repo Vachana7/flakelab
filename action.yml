@@ -1,0 +1,26 @@
+name: PipeDelta
+description: Report what new powers a pull request gives the GitHub Actions pipeline
+branding:
+  icon: shield
+  color: blue
+inputs:
+  fail-on:
+    description: Fail the check when a new power is at or above this level (low, medium, high, never)
+    default: high
+  token:
+    description: Token used to post the report as a pull request comment. Leave empty for no comment.
+    default: ""
+outputs:
+  level:
+    description: Highest level among the new powers (none, low, medium, high)
+  count:
+    description: Number of new powers
+runs:
+  using: docker
+  image: Dockerfile
+  args:
+    - action
+    - --fail-on
+    - ${{ inputs.fail-on }}
+  env:
+    PIPEDELTA_TOKEN: ${{ inputs.token }}

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -10,6 +12,8 @@ from pathlib import Path
 import yaml
 
 from .delta import Finding, compare, overall
+from .github import upsert_comment
+from .report import all_findings, render_markdown, render_text
 
 WORKFLOW_DIR = ".github/workflows/"
 
@@ -31,23 +35,54 @@ def _git_show(ref: str, path: str) -> str | None:
     return result.stdout if result.returncode == 0 else None
 
 
-def render(results: dict[str, list[Finding]]) -> str:
-    lines: list[str] = []
-    everything = [f for fs in results.values() for f in fs]
-    if not everything:
-        return "PipeDelta: no new pipeline powers in this change.\n"
-    lines.append(
-        f"PipeDelta: this change gives the pipeline {len(everything)} new power(s). "
-        f"Highest level: {overall(everything)}.\n"
-    )
-    for path, findings in results.items():
-        if not findings:
-            continue
-        lines.append(path)
-        for f in findings:
-            lines.append(f"  [{f.level.upper():6}] {f.message}")
-        lines.append("")
-    return "\n".join(lines)
+def compare_commits(base: str, head: str) -> dict[str, list[Finding]]:
+    results: dict[str, list[Finding]] = {}
+    changed = _git("diff", "--name-only", base, head, "--", WORKFLOW_DIR)
+    for path in changed.splitlines():
+        if path.endswith((".yml", ".yaml")):
+            results[path] = compare(_git_show(base, path), _git_show(head, path))
+    return results
+
+
+def _exit_code(results: dict[str, list[Finding]], fail_on: str) -> int:
+    if fail_on == "never":
+        return 0
+    order = ["low", "medium", "high"]
+    worst = overall(all_findings(results))
+    if worst != "none" and order.index(worst) >= order.index(fail_on):
+        return 1
+    return 0
+
+
+def _run_action(fail_on: str) -> int:
+    """Entry point when PipeDelta runs as a GitHub Action on a pull request."""
+    with open(os.environ["GITHUB_EVENT_PATH"], encoding="utf-8") as handle:
+        event = json.load(handle)
+    pr = event.get("pull_request")
+    if not pr:
+        print("pipedelta: this event is not a pull request, nothing to compare.")
+        return 0
+
+    results = compare_commits(pr["base"]["sha"], pr["head"]["sha"])
+    print(render_text(results))
+    markdown = render_markdown(results)
+
+    summary = os.environ.get("GITHUB_STEP_SUMMARY")
+    if summary:
+        with open(summary, "a", encoding="utf-8") as handle:
+            handle.write(markdown)
+
+    token = os.environ.get("PIPEDELTA_TOKEN", "")
+    repo = os.environ.get("GITHUB_REPOSITORY", "")
+    if token and repo and results:
+        print("pull request comment:", upsert_comment(repo, int(pr["number"]), token, markdown))
+
+    output = os.environ.get("GITHUB_OUTPUT")
+    if output:
+        with open(output, "a", encoding="utf-8") as handle:
+            handle.write(f"level={overall(all_findings(results))}\n")
+            handle.write(f"count={len(all_findings(results))}\n")
+    return _exit_code(results, fail_on)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -62,7 +97,9 @@ def main(argv: list[str] | None = None) -> int:
     g.add_argument("base")
     g.add_argument("head")
 
-    for p in (d, g):
+    a = sub.add_parser("action", help="run inside GitHub Actions on a pull request")
+
+    for p in (d, g, a):
         p.add_argument(
             "--fail-on",
             choices=["low", "medium", "high", "never"],
@@ -78,27 +115,19 @@ def main(argv: list[str] | None = None) -> int:
             results[args.new if args.new != "-" else args.old] = compare(
                 _read(args.old), _read(args.new)
             )
+        elif args.command == "action":
+            return _run_action(args.fail_on)
         else:
-            changed = _git("diff", "--name-only", args.base, args.head, "--", WORKFLOW_DIR)
-            for path in changed.splitlines():
-                if path.endswith((".yml", ".yaml")):
-                    results[path] = compare(_git_show(args.base, path), _git_show(args.head, path))
-    except (OSError, subprocess.CalledProcessError) as error:
+            results = compare_commits(args.base, args.head)
+    except (OSError, KeyError, subprocess.CalledProcessError) as error:
         print(f"pipedelta: {error}", file=sys.stderr)
         return 2
     except yaml.YAMLError as error:
         print(f"pipedelta: could not read a workflow file: {error}", file=sys.stderr)
         return 2
 
-    print(render(results))
-
-    if args.fail_on == "never":
-        return 0
-    order = ["low", "medium", "high"]
-    worst = overall([f for fs in results.values() for f in fs])
-    if worst != "none" and order.index(worst) >= order.index(args.fail_on):
-        return 1
-    return 0
+    print(render_text(results))
+    return _exit_code(results, args.fail_on)
 
 
 if __name__ == "__main__":

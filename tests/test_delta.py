@@ -71,3 +71,63 @@ def test_cli_exit_codes(capsys):
     assert main(["diff", str(EX / "before.yml"), str(EX / "after-safe.yml")]) == 0
     assert main(["diff", str(EX / "before.yml"), str(EX / "after-attack.yml")]) == 1
     assert "new power" in capsys.readouterr().out
+
+
+def test_markdown_report_has_marker_and_table():
+    from pipedelta.report import MARKER, render_markdown
+
+    text = render_markdown({"ci.yml": compare(BEFORE, ATTACK)})
+    assert text.startswith(MARKER)
+    assert "| high |" in text
+    assert "5 new power(s)" in text
+
+
+def test_markdown_report_when_nothing_gained():
+    from pipedelta.report import render_markdown
+
+    assert "no new powers" in render_markdown({"ci.yml": []})
+    assert "does not touch" in render_markdown({})
+
+
+def test_action_mode_on_a_real_git_history(tmp_path, monkeypatch, capsys):
+    import json
+    import subprocess
+
+    def git(*args):
+        subprocess.run(["git", *args], cwd=tmp_path, check=True, capture_output=True)
+
+    def sha():
+        out = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=tmp_path, check=True, capture_output=True, text=True
+        )
+        return out.stdout.strip()
+
+    wf = tmp_path / ".github" / "workflows"
+    wf.mkdir(parents=True)
+    git("init", "-q")
+    git("config", "user.email", "t@example.com")
+    git("config", "user.name", "t")
+    (wf / "ci.yml").write_text(BEFORE)
+    git("add", "-A")
+    git("commit", "-qm", "base")
+    base = sha()
+    (wf / "ci.yml").write_text(ATTACK)
+    git("commit", "-qam", "change")
+    head = sha()
+
+    event = tmp_path / "event.json"
+    event.write_text(
+        json.dumps({"pull_request": {"number": 1, "base": {"sha": base}, "head": {"sha": head}}})
+    )
+    summary = tmp_path / "summary.md"
+    output = tmp_path / "output.txt"
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event))
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary))
+    monkeypatch.setenv("GITHUB_OUTPUT", str(output))
+    monkeypatch.delenv("PIPEDELTA_TOKEN", raising=False)
+
+    assert main(["action", "--fail-on", "high"]) == 1
+    assert "PipeDelta report" in summary.read_text()
+    assert "level=high" in output.read_text()
+    assert main(["action", "--fail-on", "never"]) == 0

@@ -41,7 +41,7 @@ is an imitation, and nothing is actually stolen.
 ## Scene 3: fix it and watch the report change (about 1 minute)
 
 1. In the same pull request, open **Files changed**, click the three dots on `format.yml`, then **Edit file**.
-2. Delete the last three lines (the `curl` line and the two `env` lines) and change `pull_request_target` to `pull_request`.
+2. Delete the last three lines (the `curl` line and the two `env` lines) and change the `on:` line to `on: [workflow_dispatch]`. Do not use `pull_request` here: that would make GitHub try to run the demo file itself.
 3. Commit to the same branch.
 4. Wait. The same comment updates itself: the secret, the internet address and
    the risky trigger are gone. The check is still red, because two high-level

@@ -98,7 +98,12 @@ report problems in a workflow file as it is. PipeDelta reports what a change
 added, in plain sentences. They can be used together. I have not found a tool
 that reports changes this way, but I cannot say for certain that none exists.
 
-**How do you know the levels are right?** They are hand-written rules. See
-`docs/EVALUATION.md` for how they did on known attack patterns and on ordinary
-changes from real projects. (Written on Day 4. Until then, say it has not been
-measured yet.)
+**How do you know the levels are right?** They are hand-written rules, and I
+measured them two ways (`docs/EVALUATION.md`). On 12 attack cases that I
+reconstructed from public reports, the first version blocked 6 of the 10 where
+a workflow file changes; after I added two rules for the misses it blocked 8,
+but that second number is not independent because I adjusted the tool to those
+cases. On 1,659 real past workflow commits from eight Python projects, it
+would have blocked about one in ten, mostly for outside actions that were not
+locked to a commit. That is too noisy for a strict gate on a busy project, so
+today it fits best as an advisory comment.

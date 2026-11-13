@@ -1,0 +1,7 @@
+{
+  "title": "Workflow token widened to write-all",
+  "source": "https://www.securityscientist.net/blog/github-actions-secure/",
+  "workflow_change_visible": true,
+  "note": "Over-privileged tokens are the most common weakness reported in audits.",
+  "kind": "reconstruction from a public description; addresses replaced with .invalid names"
+}

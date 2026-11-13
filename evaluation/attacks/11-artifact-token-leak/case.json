@@ -1,0 +1,7 @@
+{
+  "title": "Workflow uploads the whole checkout, including the stored token, as a public artifact (ArtiPACKED shape)",
+  "source": "https://feed.craftedsignal.io/tags/github-actions/feed.xml",
+  "workflow_change_visible": true,
+  "note": "The leak comes from checkout storing its token in .git/config and the artifact including that folder.",
+  "kind": "reconstruction from a public description; addresses replaced with .invalid names"
+}

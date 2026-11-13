@@ -1,0 +1,145 @@
+[
+  {
+    "case": "01-named-secret-post",
+    "title": "New workflow posts a named secret to an outside address (GhostAction 2025 shape)",
+    "visible": true,
+    "level": "high",
+    "blocked_at_default": true,
+    "high_findings": [
+      "network",
+      "secret"
+    ],
+    "all_kinds": [
+      "network",
+      "secret",
+      "trigger"
+    ]
+  },
+  {
+    "case": "02-plain-http-variant",
+    "title": "New workflow sends named secrets over plain HTTP (GhostAction 2026 shape)",
+    "visible": true,
+    "level": "high",
+    "blocked_at_default": true,
+    "high_findings": [
+      "network",
+      "secret"
+    ],
+    "all_kinds": [
+      "action",
+      "network",
+      "secret",
+      "trigger"
+    ]
+  },
+  {
+    "case": "03-encoded-payload",
+    "title": "New workflow decodes and runs a hidden script (Megalodon 2026 shape)",
+    "visible": true,
+    "level": "low",
+    "blocked_at_default": false,
+    "high_findings": [],
+    "all_kinds": [
+      "trigger"
+    ]
+  },
+  {
+    "case": "04-all-secrets-dump",
+    "title": "Existing workflow changed to send every secret at once",
+    "visible": true,
+    "level": "medium",
+    "blocked_at_default": false,
+    "high_findings": [],
+    "all_kinds": [
+      "network"
+    ]
+  },
+  {
+    "case": "05-risky-trigger-introduced",
+    "title": "Workflow gains pull_request_target and checks out the visitor's code (the setup later abused by 'pwn request' attacks)",
+    "visible": true,
+    "level": "high",
+    "blocked_at_default": true,
+    "high_findings": [
+      "trigger"
+    ],
+    "all_kinds": [
+      "trigger"
+    ]
+  },
+  {
+    "case": "06-pwn-request-attack-time",
+    "title": "Attack on an already risky pull_request_target workflow",
+    "visible": false,
+    "level": "not applicable",
+    "blocked_at_default": false
+  },
+  {
+    "case": "07-unpinned-action-introduced",
+    "title": "Workflow starts using an outside action by a movable version tag (the setup behind the tj-actions and trivy-action incidents)",
+    "visible": true,
+    "level": "high",
+    "blocked_at_default": true,
+    "high_findings": [
+      "action"
+    ],
+    "all_kinds": [
+      "action"
+    ]
+  },
+  {
+    "case": "08-tag-repoint-attack-time",
+    "title": "Version tag of an already used outside action is moved to malicious code",
+    "visible": false,
+    "level": "not applicable",
+    "blocked_at_default": false
+  },
+  {
+    "case": "09-script-injection",
+    "title": "Workflow pastes a pull request title into a shell command",
+    "visible": true,
+    "level": "high",
+    "blocked_at_default": true,
+    "high_findings": [
+      "injection"
+    ],
+    "all_kinds": [
+      "injection"
+    ]
+  },
+  {
+    "case": "10-secret-to-variable-address",
+    "title": "Secret sent to an address that is not written in the file",
+    "visible": true,
+    "level": "medium",
+    "blocked_at_default": false,
+    "high_findings": [],
+    "all_kinds": [
+      "secret"
+    ]
+  },
+  {
+    "case": "11-artifact-token-leak",
+    "title": "Workflow uploads the whole checkout, including the stored token, as a public artifact (ArtiPACKED shape)",
+    "visible": true,
+    "level": "low",
+    "blocked_at_default": false,
+    "high_findings": [],
+    "all_kinds": [
+      "action"
+    ]
+  },
+  {
+    "case": "12-write-all-token",
+    "title": "Workflow token widened to write-all",
+    "visible": true,
+    "level": "high",
+    "blocked_at_default": true,
+    "high_findings": [
+      "permission"
+    ],
+    "all_kinds": [
+      "permission"
+    ]
+  }
+]

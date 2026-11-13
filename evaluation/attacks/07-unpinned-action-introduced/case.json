@@ -1,0 +1,7 @@
+{
+  "title": "Workflow starts using an outside action by a movable version tag (the setup behind the tj-actions and trivy-action incidents)",
+  "source": "https://www.securityweek.com/impact-root-cause-of-github-actions-supply-chain-hack-revealed/amp/",
+  "workflow_change_visible": true,
+  "note": "This is the change that creates the exposure, not the later attack.",
+  "kind": "reconstruction from a public description; addresses replaced with .invalid names"
+}

@@ -4,7 +4,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .powers import RISKY_TRIGGERS, Power, action_owner, extract_powers, is_pinned
+from .powers import (
+    RISKY_TRIGGERS,
+    Power,
+    action_name,
+    action_owner,
+    extract_powers,
+    is_pinned,
+)
 
 # Action publishers that come from GitHub itself.
 FIRST_PARTY = {"actions", "github"}
@@ -69,6 +76,14 @@ def _explain(power: Power, after: set[Power]) -> Finding:
             "is pasted into a shell command, so they can run their own commands.",
         )
 
+    if kind == "hidden":
+        return Finding(
+            "high",
+            power,
+            f"In {place}, a command decodes hidden text and runs it, "
+            "so a reviewer cannot see what it does.",
+        )
+
     if kind == "runner":
         return Finding("medium", power, f"In {place}, now runs on the project's own machine.")
 
@@ -81,6 +96,9 @@ def _combine(findings: list[Finding], gained: set[Power], after: set[Power]) -> 
     out: list[Finding] = []
     for f in findings:
         p = f.power
+        if p not in gained:
+            out.append(f)
+            continue
         if p.kind == "network":
             secrets_here = [
                 s for s in after if s.kind == "secret" and s.where in (p.where, "workflow")
@@ -106,6 +124,58 @@ def _is_downgrade(power: Power, before: set[Power]) -> bool:
     return any(b.kind == "permission" and b.name in wider for b in before)
 
 
+def _already_had(power: Power, before: set[Power]) -> Finding | None:
+    """Handle powers the workflow already had in some form before the change.
+
+    Renaming a job or raising an action's version number changes the text of
+    the file without giving the pipeline anything it could not do before.
+    Returns a low-level note for those cases, or None if the power is new.
+    """
+    place = "the whole workflow" if power.where == "workflow" else f"job '{power.where}'"
+
+    if power.kind == "action":
+        same_tool = [
+            b
+            for b in before
+            if b.kind == "action" and action_name(b.name) == action_name(power.name)
+        ]
+        if not same_tool:
+            return None
+        if any(b.name == power.name for b in same_tool):
+            return Finding("low", power, f"{power.name} was already used; now also in {place}.")
+        was_pinned = all(is_pinned(b.name) for b in same_tool)
+        if was_pinned and not is_pinned(power.name):
+            return Finding(
+                "high",
+                power,
+                f"In {place}, {action_name(power.name)} was locked to one commit and is now "
+                f"referenced as {power.name}, which its author can change at any time.",
+            )
+        return Finding(
+            "low",
+            power,
+            f"In {place}, the version of {action_name(power.name)} changed to {power.name}.",
+        )
+
+    if power.kind == "permission":
+        if any(b.kind == "permission" and b.name in (power.name, "write-all") for b in before):
+            return Finding(
+                "low",
+                power,
+                f"The token permission '{power.name}' already existed; now set in {place}.",
+            )
+        return None
+
+    same_power_existed = any(b.kind == power.kind and b.name == power.name for b in before)
+    if power.kind in ("secret", "network", "runner", "injection", "hidden") and same_power_existed:
+        return Finding(
+            "low",
+            power,
+            f"Already present in this workflow; now also in {place}: {power.name}.",
+        )
+    return None
+
+
 def compare(before_text: str | None, after_text: str | None) -> list[Finding]:
     """List the powers gained going from the old file to the new file.
 
@@ -114,8 +184,17 @@ def compare(before_text: str | None, after_text: str | None) -> list[Finding]:
     before = extract_powers(before_text) if before_text else set()
     after = extract_powers(after_text) if after_text else set()
     gained = {p for p in after - before if not _is_downgrade(p, before)}
-    findings = [_explain(p, after) for p in gained]
-    findings = _combine(findings, gained, after)
+
+    findings: list[Finding] = []
+    truly_new: set[Power] = set()
+    for power in gained:
+        note = _already_had(power, before)
+        if note is not None:
+            findings.append(note)
+        else:
+            truly_new.add(power)
+            findings.append(_explain(power, after))
+    findings = _combine(findings, truly_new, after)
     findings.sort(key=lambda f: (-LEVELS.index(f.level), f.power))
     return findings
 

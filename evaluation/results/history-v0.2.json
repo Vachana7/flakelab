@@ -1,0 +1,148 @@
+[
+  {
+    "repo": "flask",
+    "head": "49943b5a94413a530761350f04e896f76e8d620e",
+    "workflow_commits": 99,
+    "unreadable": 0,
+    "crashed": 0,
+    "levels": {
+      "none": 42,
+      "low": 50,
+      "medium": 2,
+      "high": 5
+    },
+    "high_reasons": {
+      "write permission": 8,
+      "outside action not locked to a commit": 3
+    }
+  },
+  {
+    "repo": "requests",
+    "head": "3c7baaa05ab4aa49cc819ce3a819d260de19c157",
+    "workflow_commits": 107,
+    "unreadable": 0,
+    "crashed": 0,
+    "levels": {
+      "low": 62,
+      "none": 38,
+      "high": 7
+    },
+    "high_reasons": {
+      "write permission": 9,
+      "outside action not locked to a commit": 3,
+      "secret and new network address in the same job": 1
+    }
+  },
+  {
+    "repo": "httpx",
+    "head": "b5addb64f0161ff6bfe94c124ef76f6a1fba5254",
+    "workflow_commits": 28,
+    "unreadable": 0,
+    "crashed": 0,
+    "levels": {
+      "low": 9,
+      "none": 18,
+      "medium": 1
+    },
+    "high_reasons": {}
+  },
+  {
+    "repo": "rich",
+    "head": "3a109ccdffe5b2d0e30684a304fbd388e99ce57b",
+    "workflow_commits": 123,
+    "unreadable": 0,
+    "crashed": 0,
+    "levels": {
+      "none": 88,
+      "high": 10,
+      "low": 22,
+      "medium": 3
+    },
+    "high_reasons": {
+      "outside action not locked to a commit": 7,
+      "write permission": 3,
+      "injection": 1,
+      "secret and new network address in the same job": 1
+    }
+  },
+  {
+    "repo": "black",
+    "head": "cf3e0938971fc5cd0d71e7b696e86a6fb953332a",
+    "workflow_commits": 277,
+    "unreadable": 2,
+    "crashed": 0,
+    "levels": {
+      "low": 163,
+      "none": 93,
+      "high": 17,
+      "medium": 2
+    },
+    "high_reasons": {
+      "write permission": 18,
+      "outside action not locked to a commit": 25,
+      "injection": 2,
+      "trigger workflow_run": 1
+    }
+  },
+  {
+    "repo": "pydantic",
+    "head": "560f0f96a37d6913afdfddb2de22030ef08e68c3",
+    "workflow_commits": 423,
+    "unreadable": 2,
+    "crashed": 0,
+    "levels": {
+      "none": 220,
+      "low": 140,
+      "high": 45,
+      "medium": 16
+    },
+    "high_reasons": {
+      "write permission": 20,
+      "trigger pull_request_target": 6,
+      "outside action not locked to a commit": 75,
+      "secret and new network address in the same job": 12,
+      "trigger workflow_run": 2,
+      "trigger issue_comment": 1
+    }
+  },
+  {
+    "repo": "pytest",
+    "head": "fc9a7ef678f64d17f1c03b619f3842ea1d127e74",
+    "workflow_commits": 255,
+    "unreadable": 0,
+    "crashed": 0,
+    "levels": {
+      "none": 96,
+      "low": 136,
+      "high": 17,
+      "medium": 6
+    },
+    "high_reasons": {
+      "outside action not locked to a commit": 15,
+      "write permission": 13,
+      "trigger pull_request_target": 1,
+      "injection": 1,
+      "trigger issue_comment": 1
+    }
+  },
+  {
+    "repo": "fastapi",
+    "head": "5758a9c8347d911444dca97a55b708cc4a8de4f8",
+    "workflow_commits": 351,
+    "unreadable": 0,
+    "crashed": 0,
+    "levels": {
+      "high": 63,
+      "none": 144,
+      "low": 124,
+      "medium": 20
+    },
+    "high_reasons": {
+      "outside action not locked to a commit": 144,
+      "write permission": 32,
+      "trigger pull_request_target": 7,
+      "trigger workflow_run": 3,
+      "trigger issue_comment": 1
+    }
+  }
+]

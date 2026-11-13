@@ -1,0 +1,7 @@
+{
+  "title": "New workflow sends named secrets over plain HTTP (GhostAction 2026 shape)",
+  "source": "https://nhimg.org/ghostaction-returns-2026-772-repositories",
+  "workflow_change_visible": true,
+  "note": "Public reports describe named secrets plus credentials searched from the working tree and history, sent over plain HTTP. The exact file was not published in the sources read, so the commands are illustrative.",
+  "kind": "reconstruction from a public description; addresses replaced with .invalid names"
+}

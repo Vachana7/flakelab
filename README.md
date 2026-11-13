@@ -6,8 +6,10 @@ permissions, new triggers, new third-party actions, new network destinations.
 
 Status (13 Nov 2026): the comparison, the Docker image, the GitHub Action and
 the pull request comment work. A live example is pull request #2 in this
-repository. Not built yet: evaluation on real attack patterns and real
-projects, dashboard.
+repository. A first evaluation is in `docs/EVALUATION.md`: it blocked 8 of 12
+reconstructed attack cases (2 of the 12 are invisible to it by design) and
+would have blocked about 1 in 10 real past workflow commits in eight Python
+projects. Not built yet: dashboard.
 
 ## Use it in a repository
 
@@ -47,7 +49,8 @@ pipeline can use it to block the change.
 - A pull request that edits or removes the PipeDelta workflow itself can
   switch the check off. The project owner has to mark the check as required
   in the branch settings for it to be a real gate.
-- The levels (low, medium, high) are rules written by hand, not measured yet.
+- The levels (low, medium, high) are rules written by hand. See
+  `docs/EVALUATION.md` for how they performed and where they are noisy.
 
 ## History of this repository
 

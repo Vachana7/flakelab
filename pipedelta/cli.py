@@ -54,6 +54,17 @@ def _exit_code(results: dict[str, list[Finding]], fail_on: str) -> int:
     return 0
 
 
+def _append(path: str | None, text: str) -> None:
+    """Add text to a file GitHub gave us. A failure here must not hide the result."""
+    if not path:
+        return
+    try:
+        with open(path, "a", encoding="utf-8") as handle:
+            handle.write(text)
+    except OSError as error:
+        print(f"pipedelta: could not write {path}: {error}", file=sys.stderr)
+
+
 def _run_action(fail_on: str) -> int:
     """Entry point when PipeDelta runs as a GitHub Action on a pull request."""
     with open(os.environ["GITHUB_EVENT_PATH"], encoding="utf-8") as handle:
@@ -67,21 +78,14 @@ def _run_action(fail_on: str) -> int:
     print(render_text(results))
     markdown = render_markdown(results)
 
-    summary = os.environ.get("GITHUB_STEP_SUMMARY")
-    if summary:
-        with open(summary, "a", encoding="utf-8") as handle:
-            handle.write(markdown)
-
     token = os.environ.get("PIPEDELTA_TOKEN", "")
     repo = os.environ.get("GITHUB_REPOSITORY", "")
     if token and repo and results:
         print("pull request comment:", upsert_comment(repo, int(pr["number"]), token, markdown))
 
-    output = os.environ.get("GITHUB_OUTPUT")
-    if output:
-        with open(output, "a", encoding="utf-8") as handle:
-            handle.write(f"level={overall(all_findings(results))}\n")
-            handle.write(f"count={len(all_findings(results))}\n")
+    level = overall(all_findings(results))
+    _append(os.environ.get("GITHUB_STEP_SUMMARY"), markdown)
+    _append(os.environ.get("GITHUB_OUTPUT"), f"level={level}\ncount={len(all_findings(results))}\n")
     return _exit_code(results, fail_on)
 
 

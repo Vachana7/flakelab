@@ -17,8 +17,8 @@ RUN pip install --no-cache-dir .
 # user, and git refuses to read it unless the folder is marked as safe.
 RUN git config --system --add safe.directory '*'
 
-# Do not run as root.
-RUN useradd --create-home runner
-USER runner
+# The container runs as root because GitHub requires that for Docker actions:
+# the files it hands to the container (step summary, outputs) are otherwise
+# not writable. PipeDelta only reads the repository and never runs its code.
 
 ENTRYPOINT ["pipedelta"]

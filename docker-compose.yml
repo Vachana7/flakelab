@@ -2,6 +2,7 @@
 #   docker compose run --rm safe      -> passes
 #   docker compose run --rm attack    -> blocked (exit code 1)
 #   docker compose run --rm fixed     -> passes with a warning
+#   docker compose up dashboard       -> results page at http://localhost:8080
 x-pipedelta: &pipedelta
   build: .
   image: pipedelta:local
@@ -19,3 +20,11 @@ services:
   fixed:
     <<: *pipedelta
     command: ["diff", "/data/before.yml", "/data/after-fixed.yml"]
+
+  dashboard:
+    image: python:3.12-slim
+    command: ["python", "-m", "http.server", "8080", "--directory", "/site"]
+    volumes:
+      - ./dashboard:/site:ro
+    ports:
+      - "127.0.0.1:8080:8080"

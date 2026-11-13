@@ -9,7 +9,7 @@ the pull request comment work. A live example is pull request #2 in this
 repository. A first evaluation is in `docs/EVALUATION.md`: it blocked 8 of 12
 reconstructed attack cases (2 of the 12 are invisible to it by design) and
 would have blocked about 1 in 10 real past workflow commits in eight Python
-projects. Not built yet: dashboard.
+projects. A results page is in `dashboard/index.html` (open it in a browser).
 
 ## Use it in a repository
 
@@ -39,6 +39,13 @@ projects. Not built yet: dashboard.
 
 The command exits with an error when a change adds a high-level power, so a
 pipeline can use it to block the change.
+
+## Documents
+
+- `docs/DEMO.md`: expo demo script and likely examiner questions
+- `docs/EVALUATION.md`: what was measured and what was not
+- `docs/UX.md`: personas, user journey, wireframes
+- `docs/LEARN.md`: study notes with questions
 
 ## Known limits
 

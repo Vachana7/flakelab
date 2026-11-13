@@ -26,6 +26,11 @@ jobs:
       - run: ruff format --check .
       - run: mypy pipedelta
       - run: pytest -q
+      - name: Dashboard and evaluation report match the result files
+        run: |
+          python evaluation/write_report.py
+          python evaluation/build_dashboard.py
+          git diff --exit-code docs/EVALUATION.md dashboard/index.html
 
   docker:
     runs-on: ubuntu-latest

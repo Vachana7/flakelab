@@ -23,8 +23,8 @@
     "unreadable": 0,
     "crashed": 0,
     "levels": {
-      "low": 60,
-      "none": 38,
+      "low": 59,
+      "none": 39,
       "high": 6,
       "medium": 3
     },
@@ -73,8 +73,8 @@
     "unreadable": 2,
     "crashed": 0,
     "levels": {
-      "low": 155,
-      "none": 96,
+      "low": 152,
+      "none": 99,
       "high": 14,
       "medium": 10
     },
@@ -113,8 +113,8 @@
     "unreadable": 0,
     "crashed": 0,
     "levels": {
-      "none": 96,
-      "low": 136,
+      "none": 99,
+      "low": 133,
       "high": 17,
       "medium": 6
     },

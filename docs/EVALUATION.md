@@ -74,14 +74,14 @@ skipped because a workflow file was not valid YAML at that point.
 | Project | Commit studied up to | Workflow commits | No new power | Low | Medium | High (blocked) |
 |---|---|---|---|---|---|---|
 | flask | `49943b5a94` | 99 | 42 | 49 | 5 | 3 |
-| requests | `3c7baaa05a` | 107 | 38 | 60 | 3 | 6 |
+| requests | `3c7baaa05a` | 107 | 39 | 59 | 3 | 6 |
 | httpx | `b5addb64f0` | 28 | 18 | 8 | 2 | 0 |
 | rich | `3a109ccdff` | 123 | 88 | 20 | 5 | 10 |
-| black | `cf3e093897` | 277 | 96 | 155 | 10 | 14 |
+| black | `cf3e093897` | 277 | 99 | 152 | 10 | 14 |
 | pydantic | `560f0f96a3` | 423 | 224 | 139 | 19 | 39 |
-| pytest | `fc9a7ef678` | 255 | 96 | 136 | 6 | 17 |
+| pytest | `fc9a7ef678` | 255 | 99 | 133 | 6 | 17 |
 | fastapi | `5758a9c834` | 351 | 143 | 126 | 22 | 60 |
-| **Total** | | 1663 | 745 | 693 | 72 | 149 |
+| **Total** | | 1663 | 752 | 686 | 72 | 149 |
 
 At the default setting PipeDelta 0.4 would have blocked 149 of 1659 commits
 (9.0%). Version 0.1 blocked 384 (23.1%); most of the

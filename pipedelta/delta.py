@@ -44,8 +44,13 @@ class Finding:
     message: str  # one plain sentence
     # "gained": the pipeline can do something new (the default).
     # "reduced": the pipeline can do less than before. Shown, never fails the check.
+    # "improved": the same power is now held more safely (an action got pinned).
     # "unknown": something changed but the file does not say in which direction.
     change: str = "gained"
+
+
+# Findings with these changes are shown but never count towards the level.
+NOT_COUNTED = {"reduced", "improved"}
 
 
 def _explain(power: Power, after: set[Power]) -> Finding:
@@ -158,19 +163,33 @@ def _already_had(power: Power, before: set[Power]) -> Finding | None:
             return None
         if any(b.name == power.name for b in same_tool):
             return Finding("low", power, f"{power.name} was already used; now also in {place}.")
+        tool = action_name(power.name)
         was_pinned = all(is_pinned(b.name) for b in same_tool)
-        if was_pinned and not is_pinned(power.name):
+        now_pinned = is_pinned(power.name)
+        if was_pinned and not now_pinned:
             return Finding(
                 "high",
                 power,
-                f"In {place}, {action_name(power.name)} was locked to one commit and is now "
+                f"In {place}, {tool} was locked to one commit and is now "
                 f"referenced as {power.name}, which its author can change at any time.",
             )
-        return Finding(
-            "low",
-            power,
-            f"In {place}, the version of {action_name(power.name)} changed to {power.name}.",
-        )
+        if now_pinned and not was_pinned:
+            return Finding(
+                "low",
+                power,
+                f"In {place}, {tool} is now locked to one commit, "
+                "so its author can no longer change what runs.",
+                change="improved",
+            )
+        if now_pinned:
+            # Still locked, but to other code. Not better or worse by itself.
+            return Finding(
+                "low",
+                power,
+                f"In {place}, {tool} is now locked to a different commit. "
+                "Check that the new commit is the one intended.",
+            )
+        return Finding("low", power, f"In {place}, the version of {tool} changed to {power.name}.")
 
     same_power_existed = any(b.kind == power.kind and b.name == power.name for b in before)
     if power.kind in ("secret", "network", "runner", "injection", "hidden") and same_power_existed:
@@ -180,6 +199,58 @@ def _already_had(power: Power, before: set[Power]) -> Finding | None:
             f"Already present in this workflow; now also in {place}: {power.name}.",
         )
     return None
+
+
+def _removal_sentence(kind: str, name: str) -> str:
+    if kind == "trigger":
+        return f"No longer runs on '{name}'."
+    if kind == "secret":
+        return f"No longer reads the secret {name}."
+    if kind == "action":
+        whose = "GitHub's own action" if action_owner(name) in FIRST_PARTY else "outside code"
+        return f"No longer runs {whose} {name}."
+    if kind == "network":
+        return f"No command contacts {name} any more."
+    if kind == "runner":
+        return "No longer runs on the project's own machine."
+    if kind == "injection":
+        return "No longer pastes outsider-controlled text into a shell command."
+    if kind == "hidden":
+        return "No longer decodes hidden text and runs it."
+    return f"No longer has: {kind} {name}."
+
+
+def _same_power(a: Power, b: Power) -> bool:
+    """Same power regardless of which job holds it. Actions match by tool, not version."""
+    if a.kind != b.kind:
+        return False
+    if a.kind == "action":
+        return action_name(a.name) == action_name(b.name)
+    return a.name == b.name
+
+
+def _removal_findings(before: set[Power], after: set[Power]) -> list[Finding]:
+    """Powers the workflow had before and has nowhere after the change.
+
+    A power that merely moved to another job (or whose job was renamed) is
+    still in the workflow, so it is not a removal.
+    """
+    gone: dict[tuple[str, str], list[str]] = {}
+    for power in before - after:
+        if power.kind == "permission":
+            continue  # handled from the effective tokens
+        if any(_same_power(power, other) for other in after):
+            continue
+        gone.setdefault((power.kind, power.name), []).append(power.where)
+    return [
+        Finding(
+            "low",
+            Power(kind, name, ", ".join(sorted(places))),
+            _removal_sentence(kind, name),
+            change="reduced",
+        )
+        for (kind, name), places in gone.items()
+    ]
 
 
 NOTHING = Token(default=NONE)  # what a job that did not exist before could do
@@ -283,7 +354,30 @@ def _permission_findings(before_text: str | None, after_text: str | None) -> lis
             for change in compare_tokens(NOTHING, token):
                 held = _held_before(change, before.values())
                 grouped.setdefault((change, held), []).append(job)
-    return [_permission_finding(change, jobs, held) for (change, held), jobs in grouped.items()]
+    findings = [_permission_finding(change, jobs, held) for (change, held), jobs in grouped.items()]
+
+    # Jobs that no longer exist. What their tokens could do is gone, unless a
+    # job in the new file can do the same (which is the case after a rename).
+    lost: dict[Change, list[str]] = {}
+    for job, token in before.items():
+        if job in after:
+            continue
+        for change in compare_tokens(token, NOTHING):
+            if change.old == UNKNOWN:
+                continue  # the file never said what this job could do
+            if not _held_before(Change(change.scope, NONE, change.old, INCREASE), after.values()):
+                lost.setdefault(change, []).append(job)
+    for change, jobs in lost.items():
+        findings.append(
+            Finding(
+                "low",
+                Power("permission", f"{change.scope}: {change.new}", ", ".join(jobs)),
+                f"The removed {_place(jobs)} had {change.scope}: {change.old}. "
+                "No job has that any more.",
+                change="reduced",
+            )
+        )
+    return findings
 
 
 def compare(before_text: str | None, after_text: str | None) -> list[Finding]:
@@ -306,14 +400,15 @@ def compare(before_text: str | None, after_text: str | None) -> list[Finding]:
             truly_new.add(power)
             findings.append(_explain(power, after))
     findings = _combine(findings, truly_new, after)
+    findings += _removal_findings(before, after)
     findings += _permission_findings(before_text, after_text)
-    findings.sort(key=lambda f: (f.change == "reduced", -LEVELS.index(f.level), f.power))
+    findings.sort(key=lambda f: (f.change in NOT_COUNTED, -LEVELS.index(f.level), f.power))
     return findings
 
 
 def overall(findings: list[Finding]) -> str:
-    """The highest level among findings that are not reductions."""
-    counted = [f for f in findings if f.change != "reduced"]
+    """The highest level among findings that are not reductions or improvements."""
+    counted = [f for f in findings if f.change not in NOT_COUNTED]
     if not counted:
         return "none"
     return max((f.level for f in counted), key=LEVELS.index)

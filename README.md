@@ -58,8 +58,3 @@ pipeline can use it to block the change.
   in the branch settings for it to be a real gate.
 - The levels (low, medium, high) are rules written by hand. See
   `docs/EVALUATION.md` for how they performed and where they are noisy.
-
-## History of this repository
-
-This repository previously held a different project, FlakeLab. Its complete
-final state is kept on the `flakelab-archive` branch.

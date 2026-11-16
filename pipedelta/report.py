@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from .delta import NOT_COUNTED, Finding, overall
+from .text import printable
 
 # Hidden marker so PipeDelta can find and update its own earlier comment.
 MARKER = "<!-- pipedelta-report -->"
@@ -41,9 +42,10 @@ def render_text(results: Results) -> str:
     for path, findings in results.items():
         if not findings:
             continue
-        lines.append(path)
+        # printable(): last line of defence. See pipedelta/text.py.
+        lines.append(printable(path))
         for f in findings:
-            lines.append(f"  [{_label(f).upper():7}] {f.message}")
+            lines.append(f"  [{_label(f).upper():7}] {printable(f.message)}")
         lines.append("")
     return "\n".join(lines)
 
@@ -55,7 +57,7 @@ def _cell(text: str) -> str:
     reviewed. Without this, a job named like a link or an @mention would
     become a real link or notify people from the comment.
     """
-    text = text.replace("\\", "\\\\").replace("\n", " ")
+    text = printable(text).replace("\\", "\\\\")
     for char in "|`*_[]<>~#!":
         text = text.replace(char, "\\" + char)
     text = text.replace("@", "@\u200b")
@@ -86,7 +88,7 @@ def render_markdown(results: Results) -> str:
     for path, findings in results.items():
         if not findings:
             continue
-        safe_path = path.replace("`", "'").replace("\n", " ")
+        safe_path = printable(path).replace("`", "'")
         lines += ["", f"### `{safe_path}`", "", "| Level | What changed |", "|---|---|"]
         for f in findings:
             lines.append(f"| {_label(f)} | {_cell(f.message)} |")

@@ -13,17 +13,11 @@ from typing import Any
 
 import yaml
 
-# ${{ secrets.NAME }}
-SECRET_RE = re.compile(r"secrets\.([A-Za-z_][A-Za-z0-9_]*)")
+from . import expressions
+from .text import clean
+
 # http://host or https://host inside a shell command
 URL_RE = re.compile(r"https?://([A-Za-z0-9.-]+)")
-# ${{ github.event.<something> }} : text an outsider can control
-UNTRUSTED_RE = re.compile(
-    r"\$\{\{\s*github\.(event\.(issue|pull_request|comment|review|head_commit|discussion)"
-    r"[A-Za-z0-9_.]*|head_ref)\s*\}\}"
-)
-# ${{ toJSON(secrets) }} hands over every secret at once
-ALL_SECRETS_RE = re.compile(r"toJSON\(\s*secrets\s*\)", re.IGNORECASE)
 # text that is decoded and immediately run, so a reviewer cannot read what it does
 HIDDEN_RE = re.compile(
     r"base64\s+(-d|-D|--decode)\b[^\n]*\|\s*(ba|z)?sh\b"
@@ -46,19 +40,6 @@ class Power:
 
 NO_LIMIT = "repository default (no limit set in the file)"
 BUILT_IN_TOKEN = "GITHUB_TOKEN"
-
-_CONTROL_RE = re.compile(r"[\x00-\x1f\x7f-\x9f\u200b-\u200f\u2028-\u202e]")
-
-
-def clean(text: object) -> str:
-    """Make text taken from a workflow file safe to print.
-
-    Job names, action names and trigger names are written by whoever made the
-    change, who may be an attacker. Control characters could fake lines in a
-    terminal, so they are removed, and very long names are cut.
-    """
-    out = _CONTROL_RE.sub(" ", str(text)).strip()
-    return out if len(out) <= 100 else out[:97] + "..."
 
 
 def _as_list(value: Any) -> list[Any]:
@@ -94,23 +75,35 @@ def _permissions(value: Any, where: str) -> list[Power]:
 
 
 def _strings(node: Any) -> list[str]:
-    """Every piece of text anywhere inside a YAML value."""
+    """Every piece of text anywhere inside a YAML value.
+
+    The value of an ``if:`` key is an expression even without ``${{ }}``
+    around it, so it is wrapped to be read as one.
+    """
     if isinstance(node, str):
         return [node]
     if isinstance(node, dict):
-        return [s for v in node.values() for s in _strings(v)]
+        found: list[str] = []
+        for key, value in node.items():
+            if key == "if" and isinstance(value, str) and "${{" not in value:
+                found.append("${{ " + value + " }}")
+            else:
+                found.extend(_strings(value))
+        return found
     if isinstance(node, list):
         return [s for v in node for s in _strings(v)]
     return []
 
 
-ALL_SECRETS = "(every secret at once)"
+INJECTION = "outsider-controlled text used in a shell command"
+ALL_SECRETS = expressions.ALL_SECRETS  # kept under this name for existing imports
 
 
-def _secret_names(text: str) -> list[str]:
-    names = SECRET_RE.findall(text)
-    if ALL_SECRETS_RE.search(text):
-        names.append(ALL_SECRETS)
+def _secret_names(text: str) -> set[str]:
+    """Secrets referenced by the ``${{ ... }}`` expressions in one string."""
+    names: set[str] = set()
+    for body in expressions.bodies(text):
+        names |= expressions.secret_names(body)
     return names
 
 
@@ -178,12 +171,20 @@ def extract_powers(text: str) -> set[Power]:
                     powers.add(Power("network", host.lower().rstrip("."), where))
                 if HIDDEN_RE.search(run):
                     powers.add(Power("hidden", "decodes hidden text and runs it", where))
-                if UNTRUSTED_RE.search(run):
-                    powers.add(
-                        Power(
-                            "injection", "outsider-controlled text used in a shell command", where
-                        )
-                    )
+                if expressions.has_untrusted_value(run):
+                    powers.add(Power("injection", INJECTION, where))
+            # The same substitution happens in the script of a github-script
+            # step, where the pasted text becomes JavaScript.
+            script = (
+                step.get("with", {}).get("script") if isinstance(step.get("with"), dict) else None
+            )
+            if (
+                isinstance(uses, str)
+                and action_name(uses) == "actions/github-script"
+                and isinstance(script, str)
+                and expressions.has_untrusted_value(script)
+            ):
+                powers.add(Power("injection", INJECTION, where))
     return powers
 
 

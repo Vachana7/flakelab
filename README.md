@@ -24,10 +24,14 @@ projects. A results page is in `dashboard/index.html` (open it in a browser).
       review:
         runs-on: ubuntu-latest
         steps:
-          - uses: actions/checkout@v4
+          - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
             with:
               fetch-depth: 0
-          - uses: Vachana7/pipedelta@main
+              persist-credentials: false
+          # Replace with the full commit id of the PipeDelta version you reviewed.
+          # Do not use a branch name such as @main: whoever can push to that
+          # branch could then change what runs in your pipeline.
+          - uses: Vachana7/pipedelta@<40-character commit id>
             with:
               token: ${{ github.token }}
 
@@ -49,6 +53,25 @@ pipeline can use it to block the change.
 
 ## Known limits
 
+- **Powers that move between jobs are under-rated.** A power is rated by
+  whether the workflow already had it, not by which job holds it. A secret
+  moved into a job that already contacts an outside address is reported as
+  low. Five tests in `tests/test_cross_job.py` record this as a known gap;
+  `docs/CROSS_JOB.md` explains it and the planned design.
+- Secrets and outsider-controlled values are recognised inside `${{ }}` in
+  dot and bracket form and in any capitalisation. Not recognised: a `}}`
+  inside a quoted string, values passed between steps or jobs through
+  outputs, and `github.token` used in place of `secrets.GITHUB_TOKEN`.
+- An outsider-controlled value inside an expression in a command is reported
+  as an injection unless it is only compared (`==`, `!=`, `<`, `>`) or sits
+  inside `contains()`, `startsWith()` or `endsWith()`. Other cases where the
+  value cannot reach the command are still reported, which errs on the side
+  of warning.
+- A project that posts with a token other than the built-in one must set
+  `PIPEDELTA_COMMENT_AUTHOR` to that account's name, or it will get a new
+  comment on every run.
+- The image is built from `python:3.12-slim` by tag, not by digest, so the
+  tool does not yet meet its own pinning advice for its base image.
 - It reads workflow files only. It does not look inside the outside actions a
   workflow calls, or inside scripts that a step runs.
 - Network destinations are found only when a full web address is written in

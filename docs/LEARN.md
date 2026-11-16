@@ -40,6 +40,11 @@ Three steps, one file each:
    internet address.
 2. `pipedelta/delta.py` does that for the old file and the new file, and keeps
    only the powers that are new. Then it gives each one a level and a sentence.
+   Token permissions are the exception: `pipedelta/permissions.py` first works
+   out what each job's token really gets (the job's own block wins over the
+   workflow's block; with neither, the repository default applies and is
+   reported as unknown), and then compares those results. That is why moving a
+   permissions block from the workflow to a job reports nothing.
 3. `pipedelta/report.py` turns the result into text or a pull request comment.
 
 Two rules worth knowing by heart:

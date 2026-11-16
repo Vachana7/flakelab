@@ -56,5 +56,12 @@ pipeline can use it to block the change.
 - A pull request that edits or removes the PipeDelta workflow itself can
   switch the check off. The project owner has to mark the check as required
   in the branch settings for it to be a real gate.
+- Permissions are worked out per job from the file alone. The repository's
+  default, organisation limits and the read-only token given to pull requests
+  from forks are not visible, so some changes are reported as "unknown".
+- Removed powers are reported for token permissions only. A deleted job, a
+  removed trigger, secret, action or network call is not reported yet.
+- Scope names in `permissions:` are compared exactly as written, including
+  capital letters.
 - The levels (low, medium, high) are rules written by hand. See
   `docs/EVALUATION.md` for how they performed and where they are noisy.

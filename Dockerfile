@@ -1,6 +1,6 @@
 FROM python:3.12-slim
 
-LABEL org.opencontainers.image.source="https://github.com/Vachana7/flakelab"
+LABEL org.opencontainers.image.source="https://github.com/Vachana7/pipedelta"
 LABEL org.opencontainers.image.description="PipeDelta: report what new powers a change gives a GitHub Actions pipeline"
 
 # git is needed to read the old and new versions of each workflow file.

@@ -27,7 +27,7 @@ projects. A results page is in `dashboard/index.html` (open it in a browser).
           - uses: actions/checkout@v4
             with:
               fetch-depth: 0
-          - uses: Vachana7/flakelab@main
+          - uses: Vachana7/pipedelta@main
             with:
               token: ${{ github.token }}
 

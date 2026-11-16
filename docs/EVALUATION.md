@@ -8,21 +8,24 @@ must not be combined.
 
 ## Summary
 
-| | Version 0.1 | Version 0.3 |
+| | Version 0.1 | Version 0.4 |
 |---|---|---|
 | Attack cases blocked at the default gate | 6 of 12 | 8 of 12 |
 | Same, counting only cases where a workflow file changes | 6 of 10 | 8 of 10 |
-| Real past workflow commits blocked at the default gate | 384 of 1659 (23.1%) | 157 of 1659 (9.5%) |
+| Real past workflow commits blocked at the default gate | 384 of 1659 (23.1%) | 149 of 1659 (9.0%) |
 
-Version 0.3 is version 0.1 plus two rounds of changes. Version 0.2 changed the
-rules after the first test run (its result files are kept in `evaluation/results/`:
-8 of 10 attack cases, 164 of 1659 commits). Version 0.3 fixed eight bugs found in a
-code review, listed in `tests/test_bugfixes.py`.
+Version 0.4 is version 0.1 plus three rounds of changes, and the result files of
+every round are kept in `evaluation/results/`:
+
+- Version 0.2 changed the rules after the first test run (8 of 10 attack cases, 164 of 1659 commits).
+- Version 0.3 fixed eight bugs found in a code review (8 of 10, 157 of 1659).
+- Version 0.4 computes each job's effective permissions instead of comparing the
+  permission blocks as written, and reports reductions and undeterminable changes separately.
 
 Version 0.2 was written **after** looking at the version 0.1 results. Two of its
 rules (hidden decoded commands, and `toJSON(secrets)`) were added because cases 03
-and 04 were missed. So the version 0.3 attack score is not independent evidence:
-the tool was adjusted to those cases, and version 0.3 inherits that. The fair statement is that version 0.1,
+and 04 were missed. So the version 0.4 attack score is not independent evidence:
+the tool was adjusted to those cases, and later versions inherit that. The fair statement is that version 0.1,
 written before any testing, blocked 6 of 10.
 
 ## Test 1: reconstructed attack cases
@@ -35,7 +38,7 @@ this project from public descriptions, with harmless placeholder addresses. They
 not the original malicious files, and twelve cases is a small set chosen by the
 author of the tool. Each `case.json` names its source.
 
-| Case | What it is | v0.1 | v0.3 |
+| Case | What it is | v0.1 | v0.4 |
 |---|---|---|---|
 | 01 | New workflow posts a named secret to an outside address (GhostAction 2025 shape) | blocked | blocked |
 | 02 | New workflow sends named secrets over plain HTTP (GhostAction 2026 shape) | blocked | blocked |
@@ -70,27 +73,27 @@ skipped because a workflow file was not valid YAML at that point.
 
 | Project | Commit studied up to | Workflow commits | No new power | Low | Medium | High (blocked) |
 |---|---|---|---|---|---|---|
-| flask | `49943b5a94` | 99 | 42 | 50 | 3 | 4 |
-| requests | `3c7baaa05a` | 107 | 38 | 60 | 2 | 7 |
+| flask | `49943b5a94` | 99 | 42 | 49 | 5 | 3 |
+| requests | `3c7baaa05a` | 107 | 38 | 60 | 3 | 6 |
 | httpx | `b5addb64f0` | 28 | 18 | 8 | 2 | 0 |
 | rich | `3a109ccdff` | 123 | 88 | 20 | 5 | 10 |
-| black | `cf3e093897` | 277 | 94 | 157 | 9 | 15 |
-| pydantic | `560f0f96a3` | 423 | 224 | 139 | 17 | 41 |
-| pytest | `fc9a7ef678` | 255 | 96 | 137 | 5 | 17 |
-| fastapi | `5758a9c834` | 351 | 144 | 125 | 19 | 63 |
-| **Total** | | 1663 | 744 | 696 | 62 | 157 |
+| black | `cf3e093897` | 277 | 96 | 155 | 10 | 14 |
+| pydantic | `560f0f96a3` | 423 | 224 | 139 | 19 | 39 |
+| pytest | `fc9a7ef678` | 255 | 96 | 136 | 6 | 17 |
+| fastapi | `5758a9c834` | 351 | 143 | 126 | 22 | 60 |
+| **Total** | | 1663 | 745 | 693 | 72 | 149 |
 
-At the default setting PipeDelta 0.3 would have blocked 157 of 1659 commits
-(9.5%). Version 0.1 blocked 384 (23.1%); most of the
+At the default setting PipeDelta 0.4 would have blocked 149 of 1659 commits
+(9.0%). Version 0.1 blocked 384 (23.1%); most of the
 difference came from no longer treating a version bump of an action already in use,
 or a renamed job, as a new power.
 
-Why the blocked commits were blocked (counted per high-level finding, version 0.3):
+Why the blocked commits were blocked (counted per high-level finding, version 0.4):
 
 | Reason | Findings |
 |---|---|
 | outside action not locked to a commit | 250 |
-| write permission | 101 |
+| write permission | 76 |
 | trigger pull_request_target | 14 |
 | secret and new network address in the same job | 12 |
 | injection | 4 |
@@ -121,9 +124,9 @@ How to read this:
 ## Reproduce
 
     pip install -e .
-    python evaluation/run_attacks.py evaluation/results/attacks-v0.3.json
+    python evaluation/run_attacks.py evaluation/results/attacks-v0.4.json
     git clone --no-checkout https://github.com/pallets/flask /tmp/hist/flask   # and the others
-    python evaluation/run_history.py evaluation/results/history-v0.3.json /tmp/hist/*
+    python evaluation/run_history.py evaluation/results/history-v0.4.json /tmp/hist/*
     python evaluation/write_report.py
 
-The version 0.1 result files were produced by commit `6492d9f` and the version 0.2 files by commit `2666b68`.
+The version 0.1 result files were produced by commit `6492d9f`, version 0.2 by `2666b68` and version 0.3 by `594e8ec`.

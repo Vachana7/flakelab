@@ -10,6 +10,16 @@ syntax for GitHub Actions", section "permissions"):
 
 When a block names some scopes, every scope it does not name is set to "none".
 
+Known limits of this model:
+
+* Scope names are kept exactly as written. ``Contents`` and ``contents`` are
+  treated as two different scopes, because we have not verified how GitHub
+  treats capital letters in scope names.
+* There is no list of valid scope names. A misspelt or brand-new scope is
+  accepted and reported under the name used in the file.
+* Only the file is modelled. Organisation limits, fork rules and the
+  repository default are outside it.
+
 Nothing in this file compares two versions. It only answers:
 "given this workflow and this job, what does the job's token get?"
 """
@@ -75,6 +85,13 @@ class Token:
         return self.default
 
 
+def _level_exists(scope: str, level: str) -> bool:
+    """Is this level one that GitHub documents for this scope?"""
+    if level == READ and scope in NO_READ_LEVEL:
+        return False
+    return not (level == WRITE and scope in NO_WRITE_LEVEL)
+
+
 def repository_default() -> Token:
     """The token of a job when no ``permissions`` block applies to it."""
     return Token(default=UNKNOWN, source="repository default")
@@ -93,10 +110,13 @@ def parse_block(value: Any, source: str) -> Token:
     if isinstance(value, Mapping):
         listed = []
         for scope, level in value.items():
+            scope = str(scope)  # kept exactly as written, including capital letters
             if not (isinstance(level, str) and level in RANK):
                 level = UNKNOWN  # a typo, an expression, a list: we cannot tell
+            elif not _level_exists(scope, level):
+                level = UNKNOWN  # e.g. "id-token: read": GitHub documents no such level
             if level != NONE:  # "none" is already the default, so it is not an exception
-                listed.append((str(scope), level))
+                listed.append((scope, level))
         return Token(default=NONE, scopes=tuple(sorted(listed)), source=source)
     # An empty key ("permissions:" with nothing after it), a list, a number,
     # an unrecognised word: not a documented form.

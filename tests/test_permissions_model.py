@@ -124,6 +124,66 @@ def test_write_all_gives_only_read_on_a_scope_without_a_write_level():
     assert parse_block("write-all", "workflow").level("vulnerability-alerts") == READ
 
 
+# --- id-token, invalid combinations and unrecognised names --------------------
+
+
+def test_id_token_listed_as_write_is_write():
+    assert parse_block({"id-token": "write"}, "job").level("id-token") == WRITE
+
+
+def test_id_token_not_listed_is_none():
+    assert parse_block({"contents": "read"}, "job").level("id-token") == NONE
+
+
+def test_id_token_read_is_not_a_documented_level_so_it_is_unknown():
+    token = parse_block({"id-token": "read", "contents": "read"}, "job")
+    assert token.level("id-token") == UNKNOWN
+    assert token.level("contents") == READ  # the rest of the block is still understood
+
+
+def test_write_on_a_scope_without_a_write_level_is_unknown():
+    assert (
+        parse_block({"vulnerability-alerts": "write"}, "job").level("vulnerability-alerts")
+        == UNKNOWN
+    )
+    assert (
+        parse_block({"vulnerability-alerts": "read"}, "job").level("vulnerability-alerts") == READ
+    )
+
+
+@pytest.mark.parametrize(
+    ("block", "scope"),
+    [
+        ({"id-token": "read"}, "id-token"),
+        ({"copilot-requests": "read"}, "copilot-requests"),
+        ({"vulnerability-alerts": "write"}, "vulnerability-alerts"),
+        ({"contents": "admin"}, "contents"),
+        ({"contents": ""}, "contents"),
+    ],
+)
+def test_an_invalid_combination_is_never_reported_as_a_real_level(block, scope):
+    assert parse_block(block, "job").level(scope) not in (NONE, READ, WRITE)
+
+
+def test_unrecognised_scope_name_is_kept_as_written():
+    token = parse_block({"made-up-scope": "write"}, "job")
+    assert token.level("made-up-scope") == WRITE
+    assert ("made-up-scope", WRITE) in token.scopes
+
+
+def test_all_forms_cover_names_we_have_never_heard_of():
+    assert parse_block("write-all", "job").level("scope-added-next-year") == WRITE
+    assert parse_block({}, "job").level("scope-added-next-year") == NONE
+
+
+def test_scope_names_are_case_sensitive_for_now():
+    # Documented limit, pinned on purpose: we have not verified how GitHub
+    # treats capital letters, so the name is kept exactly as written.
+    token = parse_block({"Contents": "write"}, "job")
+    assert token.level("Contents") == WRITE
+    assert token.level("contents") == NONE
+
+
 # --- equality: needed later to say "nothing changed" -------------------------
 
 

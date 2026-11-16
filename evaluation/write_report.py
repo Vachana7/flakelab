@@ -65,9 +65,9 @@ def main() -> None:
     )
     w("- Version 0.3 fixed eight bugs found in a code review (8 of 10, 157 of 1659).")
     w("- Version 0.4 computes each job's effective permissions instead of comparing the")
-    w(
-        "  permission blocks as written, and reports reductions and undeterminable changes separately.\n"
-    )
+    w("  permission blocks as written, reports removed powers for every kind (including")
+    w("  deleted jobs and files), and labels pinning an action as an improvement. Removals")
+    w("  and improvements never count towards the level.\n")
     w("Version 0.2 was written **after** looking at the version 0.1 results. Two of its")
     w("rules (hidden decoded commands, and `toJSON(secrets)`) were added because cases 03")
     w("and 04 were missed. So the version 0.4 attack score is not independent evidence:")

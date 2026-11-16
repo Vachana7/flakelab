@@ -20,7 +20,9 @@ every round are kept in `evaluation/results/`:
 - Version 0.2 changed the rules after the first test run (8 of 10 attack cases, 164 of 1659 commits).
 - Version 0.3 fixed eight bugs found in a code review (8 of 10, 157 of 1659).
 - Version 0.4 computes each job's effective permissions instead of comparing the
-  permission blocks as written, and reports reductions and undeterminable changes separately.
+  permission blocks as written, reports removed powers for every kind (including
+  deleted jobs and files), and labels pinning an action as an improvement. Removals
+  and improvements never count towards the level.
 
 Version 0.2 was written **after** looking at the version 0.1 results. Two of its
 rules (hidden decoded commands, and `toJSON(secrets)`) were added because cases 03

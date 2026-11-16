@@ -59,8 +59,10 @@ pipeline can use it to block the change.
 - Permissions are worked out per job from the file alone. The repository's
   default, organisation limits and the read-only token given to pull requests
   from forks are not visible, so some changes are reported as "unknown".
-- Removed powers are reported for token permissions only. A deleted job, a
-  removed trigger, secret, action or network call is not reported yet.
+- A removed power is reported only when it is gone from the whole workflow.
+  A secret dropped from one job but still used in another is not mentioned.
+- Trigger filters (`branches`, `types`, `paths`) and `if:` conditions are not
+  modelled. Widening a filter or deleting a guard condition is not reported.
 - Scope names in `permissions:` are compared exactly as written, including
   capital letters.
 - The levels (low, medium, high) are rules written by hand. See

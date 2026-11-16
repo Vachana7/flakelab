@@ -46,8 +46,13 @@ def test_brand_new_workflow_file_reports_all_its_powers():
     assert overall(compare(None, ATTACK)) == "high"
 
 
-def test_removed_powers_are_not_reported():
-    assert compare(ATTACK, BEFORE) == []
+def test_removing_powers_reports_only_reductions_and_never_fails_the_check():
+    # Until version 0.3 this returned nothing at all. Reductions are now
+    # reported, but they must not count towards the level.
+    findings = compare(ATTACK, BEFORE)
+    assert findings
+    assert all(f.change == "reduced" for f in findings)
+    assert overall(findings) == "none"
 
 
 def test_pinned_outside_action_is_medium():

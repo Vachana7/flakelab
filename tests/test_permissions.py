@@ -3,7 +3,9 @@
 These regression tests were written BEFORE the fix and failed on version 0.3.0.
 """
 
+from pipedelta.cli import main
 from pipedelta.delta import compare, overall
+from pipedelta.report import render_markdown, render_text
 
 JOB = "jobs:\n  build:\n    runs-on: ubuntu-latest\n"
 STEP = "    steps:\n      - run: make\n"
@@ -96,3 +98,89 @@ def test_invalid_level_word_is_reported_as_unknown_not_as_read():
     new = BASE.replace("  contents: read\n", "  contents: admin\n")
     findings = compare(BASE, new)
     _assert_reported_as_unknown(findings, "contents")
+
+
+# --- Stage 3: behaviour of the integrated comparison ---------------------------
+
+
+def test_reductions_alone_pass_even_the_strictest_gate(tmp_path):
+    old = tmp_path / "old.yml"
+    new = tmp_path / "new.yml"
+    old.write_text("on: push\npermissions:\n  contents: write\n" + JOB + STEP)
+    new.write_text("on: push\npermissions:\n  contents: read\n" + JOB + STEP)
+    assert main(["diff", str(old), str(new), "--fail-on", "low"]) == 0
+
+
+def test_reduction_is_labelled_in_both_report_formats():
+    old = "on: push\npermissions:\n  contents: write\n" + JOB + STEP
+    new = "on: push\npermissions:\n  contents: read\n" + JOB + STEP
+    results = {"ci.yml": compare(old, new)}
+    assert "[REDUCED" in render_text(results)
+    assert "| reduced |" in render_markdown(results)
+    assert "no new powers" in render_markdown(results)
+
+
+def test_moving_the_block_between_levels_reports_nothing():
+    at_workflow = "on: push\npermissions:\n  contents: read\n" + JOB + STEP
+    at_job = "on: push\n" + JOB + "    permissions:\n      contents: read\n" + STEP
+    assert changes(compare(at_workflow, at_job)) == []
+    assert changes(compare(at_job, at_workflow)) == []
+
+
+def test_renaming_a_job_with_write_access_is_not_an_escalation():
+    old = "on: push\npermissions:\n  contents: write\n" + JOB + STEP
+    new = old.replace("  build:", "  compile:")
+    findings = compare(old, new)
+    assert overall(findings) != "high"
+    assert all(f.level == "low" for f in findings if f.power.kind == "permission")
+
+
+def test_a_genuinely_new_job_with_write_access_is_high():
+    old = "on: push\npermissions:\n  contents: read\n" + JOB + STEP
+    new = old + "  release:\n    runs-on: x\n    permissions:\n      contents: write\n" + STEP
+    assert overall(compare(old, new)) == "high"
+
+
+def test_one_workflow_level_change_is_one_finding_naming_every_job():
+    two_jobs = JOB + STEP + "  test:\n    runs-on: x\n" + STEP
+    old = "on: push\npermissions:\n  contents: read\n" + two_jobs
+    new = "on: push\npermissions:\n  contents: write\n" + two_jobs
+    found = [f for f in compare(old, new) if f.power.kind == "permission"]
+    assert len(found) == 1
+    assert "'build'" in found[0].message
+    assert "'test'" in found[0].message
+
+
+def test_removing_every_limit_is_unknown_and_medium_not_high():
+    old = "on: push\npermissions:\n  contents: read\n" + JOB + STEP
+    new = "on: push\n" + JOB + STEP
+    found = [f for f in compare(old, new) if f.power.kind == "permission"]
+    assert found
+    assert all(f.change == "unknown" for f in found)
+    assert overall(found) == "medium"
+
+
+def test_first_explicit_limit_after_repository_default_is_not_called_an_increase():
+    old = "on: push\n" + JOB + STEP
+    new = "on: push\npermissions:\n  contents: write\n" + JOB + STEP
+    found = [f for f in compare(old, new) if f.power.kind == "permission"]
+    assert found
+    assert all(f.change == "unknown" for f in found)
+    assert overall(found) != "high"
+
+
+def test_scope_name_cannot_inject_control_characters_or_markup():
+    new = BASE.replace(
+        "  contents: read\n", '  contents: read\n  "a\\e[31m\\nFAKE [x](http://e.example)": write\n'
+    )
+    results = {"ci.yml": compare(BASE, new)}
+    text = render_text(results)
+    assert "\x1b" not in text
+    assert not any(line.startswith("FAKE") for line in text.splitlines())
+    assert "[x](http" not in render_markdown(results)
+
+
+def test_other_kinds_of_power_are_unaffected():
+    new = BASE + "      - uses: someone/tool@v1\n        env:\n          K: ${{ secrets.KEY }}\n"
+    kinds = {f.power.kind for f in compare(BASE, new)}
+    assert kinds == {"action", "secret"}

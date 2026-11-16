@@ -14,22 +14,32 @@ def all_findings(results: Results) -> list[Finding]:
     return [f for findings in results.values() for f in findings]
 
 
+def _label(finding: Finding) -> str:
+    return "reduced" if finding.change == "reduced" else finding.level
+
+
+def _headline(findings: list[Finding]) -> str:
+    new = [f for f in findings if f.change != "reduced"]
+    reduced = len(findings) - len(new)
+    if not new:
+        return f"this change gives the pipeline no new powers and reduces {reduced}."
+    text = f"this change gives the pipeline {len(new)} new power(s)"
+    if reduced:
+        text += f" and reduces {reduced}"
+    return text + f". Highest level: {overall(findings)}."
+
+
 def render_text(results: Results) -> str:
     everything = all_findings(results)
     if not everything:
         return "PipeDelta: no new pipeline powers in this change.\n"
-    lines = [
-        (
-            f"PipeDelta: this change gives the pipeline {len(everything)} new power(s). "
-            f"Highest level: {overall(everything)}.\n"
-        )
-    ]
+    lines = [f"PipeDelta: {_headline(everything)}\n"]
     for path, findings in results.items():
         if not findings:
             continue
         lines.append(path)
         for f in findings:
-            lines.append(f"  [{f.level.upper():6}] {f.message}")
+            lines.append(f"  [{_label(f).upper():7}] {f.message}")
         lines.append("")
     return "\n".join(lines)
 
@@ -57,17 +67,23 @@ def render_markdown(results: Results) -> str:
     if not everything:
         lines.append("Workflow files changed, but the pipeline gained no new powers.")
         return "\n".join(lines) + "\n"
-    lines.append(
-        f"This change gives the pipeline **{len(everything)} new power(s)**. "
-        f"Highest level: **{overall(everything)}**."
-    )
+    new = [f for f in everything if f.change != "reduced"]
+    reduced = len(everything) - len(new)
+    if not new:
+        lines.append(f"This change gives the pipeline no new powers and **reduces {reduced}**.")
+    else:
+        also = f" and reduces {reduced}" if reduced else ""
+        lines.append(
+            f"This change gives the pipeline **{len(new)} new power(s)**{also}. "
+            f"Highest level: **{overall(everything)}**."
+        )
     for path, findings in results.items():
         if not findings:
             continue
         safe_path = path.replace("`", "'").replace("\n", " ")
-        lines += ["", f"### `{safe_path}`", "", "| Level | New power |", "|---|---|"]
+        lines += ["", f"### `{safe_path}`", "", "| Level | What changed |", "|---|---|"]
         for f in findings:
-            lines.append(f"| {f.level} | {_cell(f.message)} |")
+            lines.append(f"| {_label(f)} | {_cell(f.message)} |")
     lines += [
         "",
         (

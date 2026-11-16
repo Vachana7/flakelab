@@ -30,6 +30,8 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
+from .powers import clean
+
 NONE = "none"
 READ = "read"
 WRITE = "write"
@@ -110,7 +112,9 @@ def parse_block(value: Any, source: str) -> Token:
     if isinstance(value, Mapping):
         listed = []
         for scope, level in value.items():
-            scope = str(scope)  # kept exactly as written, including capital letters
+            # Kept as written, including capital letters. clean() only strips
+            # control characters, because this text ends up in the report.
+            scope = clean(scope)
             if not (isinstance(level, str) and level in RANK):
                 level = UNKNOWN  # a typo, an expression, a list: we cannot tell
             elif not _level_exists(scope, level):
@@ -193,7 +197,7 @@ def job_tokens(workflow: Any) -> dict[str, Token]:
     if not isinstance(jobs, Mapping):
         return {}
     return {
-        str(name): effective_token(workflow, job)
+        clean(name): effective_token(workflow, job)
         for name, job in jobs.items()
         if isinstance(job, Mapping)
     }

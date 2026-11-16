@@ -62,3 +62,37 @@ def test_case3_a_new_job_block_also_removes_what_it_does_not_list():
     found = changes(compare(old, new))
     assert any(change == "gained" and "issues" in name for change, _, name in found)
     assert any(change == "reduced" and "contents" in name for change, _, name in found)
+
+
+# --- Stage 1: invalid permission lines must not look like real gains ----------
+
+BASE = "on: push\npermissions:\n  contents: read\n" + JOB + STEP
+
+
+def _with_line(line: str) -> str:
+    return BASE.replace("  contents: read\n", "  contents: read\n" + line)
+
+
+def _assert_reported_as_unknown(findings, scope):
+    about_scope = [f for f in findings if f.power.kind == "permission" and scope in f.power.name]
+    assert about_scope, "the invalid line must be mentioned, not silently dropped"
+    for f in about_scope:
+        assert getattr(f, "change", "gained") == "unknown"
+        assert f.level != "high"
+    assert overall(findings) != "high"
+
+
+def test_invalid_id_token_read_is_reported_as_unknown_not_as_a_gain():
+    findings = compare(BASE, _with_line("  id-token: read\n"))
+    _assert_reported_as_unknown(findings, "id-token")
+
+
+def test_invalid_vulnerability_alerts_write_is_not_a_high_escalation():
+    findings = compare(BASE, _with_line("  vulnerability-alerts: write\n"))
+    _assert_reported_as_unknown(findings, "vulnerability-alerts")
+
+
+def test_invalid_level_word_is_reported_as_unknown_not_as_read():
+    new = BASE.replace("  contents: read\n", "  contents: admin\n")
+    findings = compare(BASE, new)
+    _assert_reported_as_unknown(findings, "contents")

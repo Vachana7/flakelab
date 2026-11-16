@@ -130,3 +130,70 @@ def effective_token(workflow: Mapping[Any, Any], job: Mapping[Any, Any]) -> Toke
     if "permissions" in workflow:
         return parse_block(workflow["permissions"], "workflow")
     return repository_default()
+
+
+# ---------------------------------------------------------------------------
+# Comparing two tokens
+# ---------------------------------------------------------------------------
+
+OTHER_SCOPES = "all other scopes"  # stands for every scope neither token lists
+
+INCREASE = "increase"
+REDUCTION = "reduction"
+CANNOT_TELL = "unknown"
+
+
+@dataclass(frozen=True)
+class Change:
+    """One scope whose level differs between two tokens."""
+
+    scope: str
+    old: str
+    new: str
+    kind: str  # INCREASE, REDUCTION or CANNOT_TELL
+
+
+def _kind(old: str, new: str) -> str:
+    if old == UNKNOWN or new == UNKNOWN:
+        return CANNOT_TELL  # never call it an increase or a reduction
+    return INCREASE if RANK[new] > RANK[old] else REDUCTION
+
+
+def compare_tokens(before: Token, after: Token) -> list[Change]:
+    """List every scope whose level differs between two effective tokens.
+
+    The scopes checked are: every scope either token lists by name, the few
+    scopes with special levels, and one stand-in entry for all the rest.
+    Because only levels are compared, the block the permissions were written
+    in (job or workflow) makes no difference.
+    """
+    changes: list[Change] = []
+
+    rest_old, rest_new = before.default, after.default
+    if rest_old != rest_new:
+        changes.append(Change(OTHER_SCOPES, rest_old, rest_new, _kind(rest_old, rest_new)))
+
+    named = {name for name, _ in before.scopes} | {name for name, _ in after.scopes}
+    special = NO_READ_LEVEL | NO_WRITE_LEVEL
+    for scope in sorted(named | special):
+        old, new = before.level(scope), after.level(scope)
+        if old == new:
+            continue
+        if scope not in named and (old, new) == (rest_old, rest_new):
+            continue  # a special scope that simply follows "all other scopes"
+        changes.append(Change(scope, old, new, _kind(old, new)))
+    return changes
+
+
+def job_tokens(workflow: Any) -> dict[str, Token]:
+    """The effective token of every job in a parsed workflow file."""
+    if not isinstance(workflow, Mapping):
+        return {}
+    jobs = workflow.get("jobs")
+    if not isinstance(jobs, Mapping):
+        return {}
+    return {
+        str(name): effective_token(workflow, job)
+        for name, job in jobs.items()
+        if isinstance(job, Mapping)
+    }

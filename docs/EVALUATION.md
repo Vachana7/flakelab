@@ -12,7 +12,7 @@ must not be combined.
 |---|---|---|
 | Attack cases blocked at the default gate | 6 of 12 | 8 of 12 |
 | Same, counting only cases where a workflow file changes | 6 of 10 | 8 of 10 |
-| Real past workflow commits blocked at the default gate | 384 of 1659 (23.1%) | 158 of 1659 (9.5%) |
+| Real past workflow commits blocked at the default gate | 384 of 1659 (23.1%) | 159 of 1659 (9.6%) |
 
 Version 0.5 is version 0.1 plus four rounds of changes, and the result files of
 every round are kept in `evaluation/results/`:
@@ -29,7 +29,10 @@ every round are kept in `evaluation/results/`:
   locked to a commit is now high even if the workflow already used that secret
   elsewhere. No attack case changed level. Nine real commits went up to high
   (eight from medium, one from low) and none went down, so the count rose from
-  149 to 158. Nobody has judged whether those nine alerts were wanted.
+  149 to 158. The same version also stopped mistaking a login written in front
+  of a host (`https://user:token@host/`) for the host. That made one address
+  visible that was not read before and raised one more commit from medium to
+  high: 159. Nobody has judged whether those ten alerts were wanted.
 
 Version 0.2 was written **after** looking at the version 0.1 results. Two of its
 rules (hidden decoded commands, and `toJSON(secrets)`) were added because cases 03
@@ -89,11 +92,11 @@ skipped because a workflow file was not valid YAML at that point.
 | black | `cf3e093897` | 277 | 99 | 152 | 10 | 14 |
 | pydantic | `560f0f96a3` | 423 | 224 | 139 | 18 | 40 |
 | pytest | `fc9a7ef678` | 255 | 99 | 133 | 5 | 18 |
-| fastapi | `5758a9c834` | 351 | 143 | 125 | 17 | 66 |
-| **Total** | | 1663 | 752 | 685 | 64 | 158 |
+| fastapi | `5758a9c834` | 351 | 143 | 125 | 16 | 67 |
+| **Total** | | 1663 | 752 | 685 | 63 | 159 |
 
-At the default setting PipeDelta 0.5 would have blocked 158 of 1659 commits
-(9.5%). Version 0.1 blocked 384 (23.1%); most of the
+At the default setting PipeDelta 0.5 would have blocked 159 of 1659 commits
+(9.6%). Version 0.1 blocked 384 (23.1%); most of the
 difference came from no longer treating a version bump of an action already in use,
 or a renamed job, as a new power.
 
@@ -103,7 +106,7 @@ Why the blocked commits were blocked (counted per high-level finding, version 0.
 |---|---|
 | outside action not locked to a commit | 253 |
 | write permission | 76 |
-| secret and new network address in the same job | 61 |
+| secret and new network address in the same job | 64 |
 | trigger pull_request_target | 14 |
 | injection | 4 |
 | trigger workflow_run | 4 |

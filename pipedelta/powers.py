@@ -17,7 +17,13 @@ from . import expressions
 from .text import clean
 
 # http://host or https://host inside a shell command
-URL_RE = re.compile(r"https?://([A-Za-z0-9.-]+)")
+# A web address, capturing the host. An address may carry a login in front of
+# the host (https://user:password@host/); that part is skipped, because it is
+# not where the command connects to. The login ends at the first "@" and cannot
+# contain "/", so an "@" later in the path or query is not mistaken for one.
+# The password may be a GitHub expression, which contains spaces.
+_LOGIN = r"""(?:(?:\$\{\{[^}\n]{0,200}\}\}|[^\s/@'"])*@)?"""
+URL_RE = re.compile(r"https?://" + _LOGIN + r"([A-Za-z0-9.-]+)")
 # text that is decoded and immediately run, so a reviewer cannot read what it does
 HIDDEN_RE = re.compile(
     r"base64\s+(-d|-D|--decode)\b[^\n]*\|\s*(ba|z)?sh\b"

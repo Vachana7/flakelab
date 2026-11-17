@@ -135,16 +135,16 @@
     "unreadable": 0,
     "crashed": 0,
     "levels": {
-      "high": 66,
+      "high": 67,
       "none": 143,
       "low": 125,
-      "medium": 17
+      "medium": 16
     },
     "high_reasons": {
       "outside action not locked to a commit": 141,
       "write permission": 27,
       "trigger pull_request_target": 7,
-      "secret and new network address in the same job": 33,
+      "secret and new network address in the same job": 36,
       "trigger workflow_run": 2,
       "trigger issue_comment": 1
     }

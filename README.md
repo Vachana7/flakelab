@@ -86,9 +86,6 @@ pipeline can use it to block the change.
 - A power dropped from one job but still held by another is reported as a
   reduction for that job, unless another job received it in the same change
   (then it is treated as a move).
-- A web address written with a user name and password in front
-  (`https://user:token@host/`) is reported under the user name instead of the
-  host. Found on 17 Nov 2026 in real history; not fixed yet.
 - Trigger filters (`branches`, `types`, `paths`) and `if:` conditions are not
   modelled. Widening a filter or deleting a guard condition is not reported.
 - Scope names in `permissions:` are compared exactly as written, including

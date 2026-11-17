@@ -69,8 +69,15 @@ No attack case changed level. Of 1,659 real workflow commits, nine went up
 to high (eight from medium, one from low) and none went down: 149 blocked
 became 158. All nine are a secret arriving in a job beside unpinned outside
 code (seven), an outside address (one) or outsider text in a command (one).
-Nobody has judged whether those alerts were wanted, so this is alert volume
-and not accuracy.
+
+A fix made afterwards in the same version (a login in front of a host is no
+longer read as the host) made one more address visible. One more commit went
+from medium to high: 159. In that commit a secret used as the login for
+github.com was replaced by a differently named secret, so the pairing is new
+by name although the workflow does the same thing as before.
+
+Nobody has judged whether those ten alerts were wanted, so this is alert
+volume and not accuracy.
 
 ## Designs compared
 

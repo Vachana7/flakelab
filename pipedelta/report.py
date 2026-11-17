@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from .delta import Finding, overall
+from .delta import NOT_COUNTED, Finding, overall
+from .text import printable
 
 # Hidden marker so PipeDelta can find and update its own earlier comment.
 MARKER = "<!-- pipedelta-report -->"
@@ -14,22 +15,37 @@ def all_findings(results: Results) -> list[Finding]:
     return [f for findings in results.values() for f in findings]
 
 
+def _label(finding: Finding) -> str:
+    return finding.change if finding.change in NOT_COUNTED else finding.level
+
+
+def _lowered(count: int) -> str:
+    return f"{count} reduction(s) or improvement(s)"
+
+
+def _headline(findings: list[Finding]) -> str:
+    new = [f for f in findings if f.change not in NOT_COUNTED]
+    lowered = len(findings) - len(new)
+    if not new:
+        return f"this change gives the pipeline no new powers and makes {_lowered(lowered)}."
+    text = f"this change gives the pipeline {len(new)} new power(s)"
+    if lowered:
+        text += f" and makes {_lowered(lowered)}"
+    return text + f". Highest level: {overall(findings)}."
+
+
 def render_text(results: Results) -> str:
     everything = all_findings(results)
     if not everything:
         return "PipeDelta: no new pipeline powers in this change.\n"
-    lines = [
-        (
-            f"PipeDelta: this change gives the pipeline {len(everything)} new power(s). "
-            f"Highest level: {overall(everything)}.\n"
-        )
-    ]
+    lines = [f"PipeDelta: {_headline(everything)}\n"]
     for path, findings in results.items():
         if not findings:
             continue
-        lines.append(path)
+        # printable(): last line of defence. See pipedelta/text.py.
+        lines.append(printable(path))
         for f in findings:
-            lines.append(f"  [{f.level.upper():6}] {f.message}")
+            lines.append(f"  [{_label(f).upper():7}] {printable(f.message)}")
         lines.append("")
     return "\n".join(lines)
 
@@ -41,7 +57,7 @@ def _cell(text: str) -> str:
     reviewed. Without this, a job named like a link or an @mention would
     become a real link or notify people from the comment.
     """
-    text = text.replace("\\", "\\\\").replace("\n", " ")
+    text = printable(text).replace("\\", "\\\\")
     for char in "|`*_[]<>~#!":
         text = text.replace(char, "\\" + char)
     text = text.replace("@", "@\u200b")
@@ -57,17 +73,25 @@ def render_markdown(results: Results) -> str:
     if not everything:
         lines.append("Workflow files changed, but the pipeline gained no new powers.")
         return "\n".join(lines) + "\n"
-    lines.append(
-        f"This change gives the pipeline **{len(everything)} new power(s)**. "
-        f"Highest level: **{overall(everything)}**."
-    )
+    new = [f for f in everything if f.change not in NOT_COUNTED]
+    lowered = len(everything) - len(new)
+    if not new:
+        lines.append(
+            f"This change gives the pipeline no new powers and makes **{_lowered(lowered)}**."
+        )
+    else:
+        also = f" and makes {_lowered(lowered)}" if lowered else ""
+        lines.append(
+            f"This change gives the pipeline **{len(new)} new power(s)**{also}. "
+            f"Highest level: **{overall(everything)}**."
+        )
     for path, findings in results.items():
         if not findings:
             continue
-        safe_path = path.replace("`", "'").replace("\n", " ")
-        lines += ["", f"### `{safe_path}`", "", "| Level | New power |", "|---|---|"]
+        safe_path = printable(path).replace("`", "'")
+        lines += ["", f"### `{safe_path}`", "", "| Level | What changed |", "|---|---|"]
         for f in findings:
-            lines.append(f"| {f.level} | {_cell(f.message)} |")
+            lines.append(f"| {_label(f)} | {_cell(f.message)} |")
     lines += [
         "",
         (

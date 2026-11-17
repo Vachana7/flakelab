@@ -2,11 +2,27 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 
+import yaml
+
+from .permissions import (
+    CANNOT_TELL,
+    INCREASE,
+    NONE,
+    OTHER_SCOPES,
+    RANK,
+    REDUCTION,
+    UNKNOWN,
+    WRITE,
+    Change,
+    Token,
+    compare_tokens,
+    job_tokens,
+)
 from .powers import (
     BUILT_IN_TOKEN,
-    NO_LIMIT,
     RISKY_TRIGGERS,
     Power,
     action_name,
@@ -26,6 +42,15 @@ class Finding:
     level: str  # low, medium, high
     power: Power
     message: str  # one plain sentence
+    # "gained": the pipeline can do something new (the default).
+    # "reduced": the pipeline can do less than before. Shown, never fails the check.
+    # "improved": the same power is now held more safely (an action got pinned).
+    # "unknown": something changed but the file does not say in which direction.
+    change: str = "gained"
+
+
+# Findings with these changes are shown but never count towards the level.
+NOT_COUNTED = {"reduced", "improved"}
 
 
 def _explain(power: Power, after: set[Power]) -> Finding:
@@ -41,20 +66,6 @@ def _explain(power: Power, after: set[Power]) -> Finding:
                 "while the pipeline still has access to secrets.",
             )
         return Finding("low", power, f"Now also runs on '{name}'.")
-
-    if kind == "permission" and name == NO_LIMIT:
-        return Finding(
-            "medium",
-            power,
-            f"In {place}, no limit is set on the pipeline token, so it gets the "
-            "repository's default permissions, which may include changing the repository.",
-        )
-
-    if kind == "permission":
-        writes = name == "write-all" or name.endswith(": write")
-        level = "high" if writes else "low"
-        verb = "change" if writes else "read"
-        return Finding(level, power, f"In {place}, the pipeline token can now {verb}: {name}.")
 
     if kind == "secret" and name == BUILT_IN_TOKEN:
         return Finding(
@@ -133,15 +144,6 @@ def _combine(findings: list[Finding], gained: set[Power], after: set[Power]) -> 
     return out
 
 
-def _is_downgrade(power: Power, before: set[Power]) -> bool:
-    """Going from write to read is losing a power, not gaining one."""
-    if power.kind != "permission" or not power.name.endswith(": read"):
-        return False
-    scope = power.name.split(":")[0]
-    wider = {f"{scope}: write", "write-all"}
-    return any(b.kind == "permission" and b.name in wider for b in before)
-
-
 def _already_had(power: Power, before: set[Power]) -> Finding | None:
     """Handle powers the workflow already had in some form before the change.
 
@@ -161,28 +163,33 @@ def _already_had(power: Power, before: set[Power]) -> Finding | None:
             return None
         if any(b.name == power.name for b in same_tool):
             return Finding("low", power, f"{power.name} was already used; now also in {place}.")
+        tool = action_name(power.name)
         was_pinned = all(is_pinned(b.name) for b in same_tool)
-        if was_pinned and not is_pinned(power.name):
+        now_pinned = is_pinned(power.name)
+        if was_pinned and not now_pinned:
             return Finding(
                 "high",
                 power,
-                f"In {place}, {action_name(power.name)} was locked to one commit and is now "
+                f"In {place}, {tool} was locked to one commit and is now "
                 f"referenced as {power.name}, which its author can change at any time.",
             )
-        return Finding(
-            "low",
-            power,
-            f"In {place}, the version of {action_name(power.name)} changed to {power.name}.",
-        )
-
-    if power.kind == "permission":
-        if any(b.kind == "permission" and b.name in (power.name, "write-all") for b in before):
+        if now_pinned and not was_pinned:
             return Finding(
                 "low",
                 power,
-                f"The token permission '{power.name}' already existed; now set in {place}.",
+                f"In {place}, {tool} is now locked to one commit, "
+                "so its author can no longer change what runs.",
+                change="improved",
             )
-        return None
+        if now_pinned:
+            # Still locked, but to other code. Not better or worse by itself.
+            return Finding(
+                "low",
+                power,
+                f"In {place}, {tool} is now locked to a different commit. "
+                "Check that the new commit is the one intended.",
+            )
+        return Finding("low", power, f"In {place}, the version of {tool} changed to {power.name}.")
 
     same_power_existed = any(b.kind == power.kind and b.name == power.name for b in before)
     if power.kind in ("secret", "network", "runner", "injection", "hidden") and same_power_existed:
@@ -194,14 +201,194 @@ def _already_had(power: Power, before: set[Power]) -> Finding | None:
     return None
 
 
+def _removal_sentence(kind: str, name: str) -> str:
+    if kind == "trigger":
+        return f"No longer runs on '{name}'."
+    if kind == "secret":
+        return f"No longer reads the secret {name}."
+    if kind == "action":
+        whose = "GitHub's own action" if action_owner(name) in FIRST_PARTY else "outside code"
+        return f"No longer runs {whose} {name}."
+    if kind == "network":
+        return f"No command contacts {name} any more."
+    if kind == "runner":
+        return "No longer runs on the project's own machine."
+    if kind == "injection":
+        return "No longer pastes outsider-controlled text into a shell command."
+    if kind == "hidden":
+        return "No longer decodes hidden text and runs it."
+    return f"No longer has: {kind} {name}."
+
+
+def _same_power(a: Power, b: Power) -> bool:
+    """Same power regardless of which job holds it. Actions match by tool, not version."""
+    if a.kind != b.kind:
+        return False
+    if a.kind == "action":
+        return action_name(a.name) == action_name(b.name)
+    return a.name == b.name
+
+
+def _removal_findings(before: set[Power], after: set[Power]) -> list[Finding]:
+    """Powers the workflow had before and has nowhere after the change.
+
+    A power that merely moved to another job (or whose job was renamed) is
+    still in the workflow, so it is not a removal.
+    """
+    gone: dict[tuple[str, str], list[str]] = {}
+    for power in before - after:
+        if power.kind == "permission":
+            continue  # handled from the effective tokens
+        if any(_same_power(power, other) for other in after):
+            continue
+        gone.setdefault((power.kind, power.name), []).append(power.where)
+    return [
+        Finding(
+            "low",
+            Power(kind, name, ", ".join(sorted(places))),
+            _removal_sentence(kind, name),
+            change="reduced",
+        )
+        for (kind, name), places in gone.items()
+    ]
+
+
+NOTHING = Token(default=NONE)  # what a job that did not exist before could do
+
+
+def _place(jobs: list[str]) -> str:
+    """'job a' / 'jobs a, b' / 'jobs a, b, c and 2 more'."""
+    quoted = [f"'{job}'" for job in jobs]
+    if len(quoted) == 1:
+        return f"job {quoted[0]}"
+    if len(quoted) <= 3:
+        return "jobs " + ", ".join(quoted)
+    return "jobs " + ", ".join(quoted[:3]) + f" and {len(quoted) - 3} more"
+
+
+def _held_before(change: Change, before: Iterable[Token]) -> bool:
+    """Did some job already have this level for this scope before the change?
+
+    Used only for jobs with a new name, so that renaming a job is not
+    reported as the pipeline gaining permissions it already had.
+    """
+    for token in before:
+        had = token.default if change.scope == OTHER_SCOPES else token.level(change.scope)
+        if change.new == UNKNOWN:
+            if had == UNKNOWN:
+                return True
+        elif had != UNKNOWN and RANK[had] >= RANK[change.new]:
+            return True
+    return False
+
+
+def _permission_finding(change: Change, jobs: list[str], held_before: bool) -> Finding:
+    place = _place(jobs)
+    scope, old, new = change.scope, change.old, change.new
+    power = Power("permission", f"{scope}: {new}", ", ".join(jobs))
+
+    if held_before:
+        return Finding(
+            "low",
+            power,
+            f"In {place}, the pipeline token has {scope}: {new}. "
+            "Another job already had this before the change.",
+        )
+
+    if change.kind == INCREASE:
+        if new == WRITE:
+            return Finding(
+                "high",
+                power,
+                f"In {place}, the pipeline token can now change {scope} (was {old}, now write).",
+            )
+        return Finding(
+            "low", power, f"In {place}, the pipeline token can now read {scope} (was {old})."
+        )
+
+    if change.kind == REDUCTION:
+        return Finding(
+            "low",
+            power,
+            f"In {place}, the pipeline token lost access to {scope} (was {old}, now {new}).",
+            change="reduced",
+        )
+
+    # The file does not say whether this is more or less than before.
+    assert change.kind == CANNOT_TELL
+    if new == UNKNOWN and scope == OTHER_SCOPES:
+        text = (
+            f"In {place}, the pipeline token's permissions cannot be read from this file: "
+            "no limit is set (or it is written in a form PipeDelta does not recognise), so the "
+            f"repository's default applies, which may include changing the repository (was {old})."
+        )
+        level = "medium"
+    elif new == UNKNOWN:
+        text = (
+            f"In {place}, the level of {scope} cannot be determined from the file "
+            f"(was {old}). The value may not be valid for this scope."
+        )
+        level = "medium"
+    else:
+        text = (
+            f"In {place}, {scope} is now set to {new}. Before, the file did not say what "
+            "it was, so PipeDelta cannot tell whether this is more or less than before."
+        )
+        level = "medium" if new == WRITE else "low"
+    return Finding(level, power, text, change="unknown")
+
+
+def _permission_findings(before_text: str | None, after_text: str | None) -> list[Finding]:
+    """Compare what each job's token gets before and after the change."""
+    before = job_tokens(yaml.safe_load(before_text)) if before_text else {}
+    after = job_tokens(yaml.safe_load(after_text)) if after_text else {}
+
+    # The same change in several jobs (for example when the workflow-level
+    # block changes) becomes one finding that names all of them.
+    grouped: dict[tuple[Change, bool], list[str]] = {}
+    for job, token in after.items():
+        if job in before:
+            for change in compare_tokens(before[job], token):
+                grouped.setdefault((change, False), []).append(job)
+        else:
+            for change in compare_tokens(NOTHING, token):
+                held = _held_before(change, before.values())
+                grouped.setdefault((change, held), []).append(job)
+    findings = [_permission_finding(change, jobs, held) for (change, held), jobs in grouped.items()]
+
+    # Jobs that no longer exist. What their tokens could do is gone, unless a
+    # job in the new file can do the same (which is the case after a rename).
+    lost: dict[Change, list[str]] = {}
+    for job, token in before.items():
+        if job in after:
+            continue
+        for change in compare_tokens(token, NOTHING):
+            if change.old == UNKNOWN:
+                continue  # the file never said what this job could do
+            if not _held_before(Change(change.scope, NONE, change.old, INCREASE), after.values()):
+                lost.setdefault(change, []).append(job)
+    for change, jobs in lost.items():
+        findings.append(
+            Finding(
+                "low",
+                Power("permission", f"{change.scope}: {change.new}", ", ".join(jobs)),
+                f"The removed {_place(jobs)} had {change.scope}: {change.old}. "
+                "No job has that any more.",
+                change="reduced",
+            )
+        )
+    return findings
+
+
 def compare(before_text: str | None, after_text: str | None) -> list[Finding]:
-    """List the powers gained going from the old file to the new file.
+    """List what changed in the pipeline's powers from the old file to the new file.
 
     None means the file did not exist on that side.
     """
     before = extract_powers(before_text) if before_text else set()
     after = extract_powers(after_text) if after_text else set()
-    gained = {p for p in after - before if not _is_downgrade(p, before)}
+    # Permissions are handled separately below, from each job's effective token.
+    gained = {p for p in after - before if p.kind != "permission"}
 
     findings: list[Finding] = []
     truly_new: set[Power] = set()
@@ -213,11 +400,15 @@ def compare(before_text: str | None, after_text: str | None) -> list[Finding]:
             truly_new.add(power)
             findings.append(_explain(power, after))
     findings = _combine(findings, truly_new, after)
-    findings.sort(key=lambda f: (-LEVELS.index(f.level), f.power))
+    findings += _removal_findings(before, after)
+    findings += _permission_findings(before_text, after_text)
+    findings.sort(key=lambda f: (f.change in NOT_COUNTED, -LEVELS.index(f.level), f.power))
     return findings
 
 
 def overall(findings: list[Finding]) -> str:
-    if not findings:
+    """The highest level among findings that are not reductions or improvements."""
+    counted = [f for f in findings if f.change not in NOT_COUNTED]
+    if not counted:
         return "none"
-    return max((f.level for f in findings), key=LEVELS.index)
+    return max((f.level for f in counted), key=LEVELS.index)

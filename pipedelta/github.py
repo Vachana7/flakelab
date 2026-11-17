@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import urllib.error
 import urllib.request
 from typing import Any
@@ -22,18 +23,42 @@ def _call(method: str, url: str, token: str, body: dict[str, Any] | None = None)
         return json.loads(response.read() or b"null")
 
 
+# The account that writes comments when a workflow uses its built-in token.
+DEFAULT_AUTHOR = "github-actions[bot]"
+
+
+def _is_ours(comment: Any, author: str) -> bool:
+    """Is this an earlier PipeDelta report written by our own account?
+
+    The hidden marker alone is not enough: anyone can paste it into a
+    comment. If we tried to update a stranger's comment, GitHub would refuse
+    and no report would be posted at all.
+    """
+    if not isinstance(comment, dict):
+        return False
+    user = comment.get("user")
+    login = user.get("login") if isinstance(user, dict) else None
+    return login == author and MARKER in (comment.get("body") or "")
+
+
 def upsert_comment(repo: str, pr_number: int, token: str, body: str) -> str:
-    """Create the PipeDelta comment, or edit it if it already exists.
+    """Create the PipeDelta comment, or edit our own earlier one.
 
     Returns "created", "updated", or "skipped: <reason>". Never raises:
     a missing comment must not hide the real result of the check.
+
+    A token that belongs to another account (not the built-in one) can name
+    that account in the PIPEDELTA_COMMENT_AUTHOR environment variable.
     """
+    author = os.environ.get("PIPEDELTA_COMMENT_AUTHOR") or DEFAULT_AUTHOR
     try:
         comments = _call(
             "GET", f"{API}/repos/{repo}/issues/{pr_number}/comments?per_page=100", token
         )
-        for comment in comments:
-            if MARKER in (comment.get("body") or ""):
+        for comment in comments if isinstance(comments, list) else []:
+            if not _is_ours(comment, author):
+                continue
+            try:
                 _call(
                     "PATCH",
                     f"{API}/repos/{repo}/issues/comments/{comment['id']}",
@@ -41,6 +66,8 @@ def upsert_comment(repo: str, pr_number: int, token: str, body: str) -> str:
                     {"body": body},
                 )
                 return "updated"
+            except urllib.error.HTTPError:
+                break  # could not edit it: post a fresh report instead
         _call("POST", f"{API}/repos/{repo}/issues/{pr_number}/comments", token, {"body": body})
         return "created"
     except (urllib.error.URLError, OSError, ValueError, KeyError) as error:

@@ -14,4 +14,6 @@ jobs:
         env:
           TITLE: ${{ github.event.pull_request.title }}
         run: echo "title=$TITLE" >> "$GITHUB_OUTPUT"
-      - run: ./notify.sh "${{ steps.read.outputs.title }}"
+      - env:
+          TITLE: ${{ steps.read.outputs.title }}
+        run: ./notify.sh "$TITLE"

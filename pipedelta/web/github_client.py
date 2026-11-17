@@ -88,6 +88,20 @@ def check_ref(ref: str | None) -> str | None:
     return ref
 
 
+class _SameHostRedirects(urllib.request.HTTPRedirectHandler):
+    """urllib resends the Authorization header on a redirect. Only follow ones to GitHub's API."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[no-untyped-def]
+        parts = urllib.parse.urlsplit(newurl)
+        if parts.scheme != "https" or parts.hostname != "api.github.com":
+            raise GitHubError("bad_redirect", "GitHub tried to send the request elsewhere.", 502)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def build_opener() -> urllib.request.OpenerDirector:
+    return urllib.request.build_opener(_SameHostRedirects)
+
+
 class GitHub:
     """Reads from the GitHub REST API. ``opener`` can be replaced in tests."""
 
@@ -97,7 +111,7 @@ class GitHub:
         opener: Callable[..., Any] | None = None,
     ) -> None:
         self._token = token
-        self._open = opener or urllib.request.urlopen
+        self._open = opener or build_opener().open
         self.last_rate: dict[str, int] | None = None
 
     @property

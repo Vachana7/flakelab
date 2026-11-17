@@ -9,6 +9,20 @@ Say the one-line idea first:
 > new powers the pipeline just gained, in plain words, before the change is
 > accepted."
 
+## Main demo: the web app (about 4 minutes)
+
+This is the product version of the three scenes below. Start it with
+`pip install -e .` then `pipedelta serve`, and open http://127.0.0.1:8765.
+The full walk-through, the API and the security choices are in
+`docs/PLATFORM.md`. In short: connect `Vachana7/pipedelta`, run a pull request,
+open a finding to show its line and before/after values, show Compare and
+Jobs and steps, run the "Outsider text passed between steps" example, download
+the SARIF report, then show History and Overview. Every number on those pages
+is computed from the analyses you ran; none is typed in.
+
+The scenes below use the command line and Docker and remain the offline
+fallback.
+
 ## Scene 1: an ordinary change passes (about 1 minute)
 
 1. Open the repository on GitHub. Open `.github/workflows/ci.yml` and click the pencil (edit).
@@ -107,3 +121,19 @@ cases. On 1,659 real past workflow commits from eight Python projects, it
 would have blocked about one in ten, mostly for outside actions that were not
 locked to a commit. That is too noisy for a strict gate on a busy project, so
 today it fits best as an advisory comment.
+
+**What is the final state, in numbers?** Version 0.5 plus the web app.
+Tests: 366 passing locally. Attack cases: 8 of 12 blocked at the default gate
+(8 of 10 where a workflow file changes), not independent evidence because the
+rules were tuned to them. Real history: 159 of 1,659 commits (9.6%) would be
+blocked, which measures alert volume, not accuracy; nobody has judged which of
+those alerts were wanted. Evidence for findings was checked over 2,808 real
+file pairs (4,534 findings): no crash, no line number outside its file, 96.8%
+located to the exact line. The step-output and job-output rules are tested on
+constructed cases and have not fired on the real history.
+
+**Is the web app safe to run?** It binds to localhost, refuses requests that
+name another host or come from another website, and keeps the GitHub token in
+the server's environment only. The token is never sent to the browser, and the
+GitHub client refuses redirects away from api.github.com so the token cannot be
+forwarded elsewhere. It has no login and is for one user on one computer.

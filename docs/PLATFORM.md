@@ -52,6 +52,8 @@ Errors are always `{"error": {"code", "message"}}` with a matching HTTP status.
 
 - Binds to 127.0.0.1. The `Host` header must be a local name (stops DNS rebinding).
 - Writes need `Content-Type: application/json` and, if an `Origin` is sent, the page's own origin (stops other websites posting to it).
+- The GitHub client refuses any redirect that leaves `https://api.github.com` (urllib would otherwise resend the token), tested in `tests/test_github_redirects.py`.
+- The token is read from `GITHUB_TOKEN` or `GH_TOKEN`; an empty value counts as unset.
 - Request bodies over 600 KB are refused; GitHub files over 256 KB are refused.
 - Strict Content-Security-Policy; the front end builds DOM with `textContent` only, so text from a workflow file can never become markup.
 - Static files are served only from the `static` folder.

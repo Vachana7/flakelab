@@ -77,7 +77,11 @@ def main() -> None:
     w("  149 to 158. The same version also stopped mistaking a login written in front")
     w("  of a host (`https://user:token@host/`) for the host. That made one address")
     w("  visible that was not read before and raised one more commit from medium to")
-    w("  high: 159. Nobody has judged whether those ten alerts were wanted.\n")
+    w("  high: 159. Nobody has judged whether those ten alerts were wanted.")
+    w(
+        "  Following outsider text through job outputs and step outputs was added afterwards; it changed"
+    )
+    w("  no result in either test, so there is no separate result file for it.\n")
     w("Version 0.2 was written **after** looking at the version 0.1 results. Two of its")
     w("rules (hidden decoded commands, and `toJSON(secrets)`) were added because cases 03")
     w("and 04 were missed. So the version 0.5 attack score is not independent evidence:")

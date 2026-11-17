@@ -35,8 +35,6 @@ from .text import clean
 # out at run time, as in secrets[matrix.name].
 Path = tuple[str | None, ...]
 
-_BODY_RE = re.compile(r"\$\{\{(.*?)\}\}", re.DOTALL)
-
 _TOKEN_RE = re.compile(
     r"""
       (?P<string>'(?:[^']|'')*')            # 'text', with '' for a quote
@@ -66,69 +64,103 @@ def bodies(text: str) -> list[str]:
     """The text inside every ``${{ ... }}`` in a string.
 
     Limit: a ``}}`` inside a quoted string in the expression ends it early.
+
+    This walks the text once with ``str.find``. (It used to be a lazy regex;
+    on a ``${{`` that is never closed that regex rescanned the rest of the
+    text once per ``${{``, which took seconds on crafted input.) Once no
+    closing ``}}`` is left, no later opening can be closed either, so the walk
+    stops.
     """
-    return _BODY_RE.findall(text)
+    found: list[str] = []
+    position = 0
+    while True:
+        start = text.find("${{", position)
+        if start < 0:
+            break
+        end = text.find("}}", start + 3)
+        if end < 0:
+            break
+        found.append(text[start + 3 : end])
+        position = end + 2
+    return found
 
 
 def _tokens(body: str) -> list[tuple[str, str]]:
     return [(m.lastgroup or "other", m.group()) for m in _TOKEN_RE.finditer(body)]
 
 
-def _matching_bracket(tokens: list[tuple[str, str]], start: int) -> int:
-    """Index of the ``]`` that closes the ``[`` at ``start`` (or the last token)."""
-    depth = 0
-    for i in range(start, len(tokens)):
-        if tokens[i][1] == "[":
-            depth += 1
-        elif tokens[i][1] == "]":
-            depth -= 1
-            if depth == 0:
-                return i
-    return len(tokens) - 1
+def _bracket_matches(tokens: list[tuple[str, str]]) -> dict[int, int]:
+    """For every ``[``, the index of the ``]`` that closes it, found in one pass.
+
+    A ``[`` that is never closed is matched to the last token. A stray ``]``
+    with nothing open is ignored.
+    """
+    matches: dict[int, int] = {}
+    open_at: list[int] = []
+    for i, (_, text) in enumerate(tokens):
+        if text == "[":
+            open_at.append(i)
+        elif text == "]" and open_at:
+            matches[open_at.pop()] = i
+    for i in open_at:
+        matches[i] = len(tokens) - 1
+    return matches
 
 
 # A reference with the positions of its first and last token in the body.
 _Found = tuple[Path, int, int]
 
 
-def _find(tokens: list[tuple[str, str]], offset: int = 0) -> list[_Found]:
-    """Every reference in a token list, including those inside ``[ ... ]``."""
-    found: list[_Found] = []
-    i = 0
-    while i < len(tokens):
-        kind, text = tokens[i]
-        is_call = i + 1 < len(tokens) and tokens[i + 1][1] == "("
-        # "x).secrets" is a property of whatever the function returned,
-        # not the secrets context.
-        is_property = i > 0 and tokens[i - 1][1] == "."
-        if kind != "name" or is_call or is_property:
-            i += 1
-            continue
+def _find(tokens: list[tuple[str, str]]) -> list[_Found]:
+    """Every reference in a token list, including those inside ``[ ... ]``.
 
-        start = i
-        parts: list[str | None] = [text]
-        i += 1
-        while i < len(tokens):
-            here = tokens[i][1]
-            after = tokens[i + 1] if i + 1 < len(tokens) else ("", "")
-            if here == "." and after[0] == "name":
-                parts.append(after[1])
-                i += 2
-            elif here == "." and after[1] == "*":
-                parts.append("*")
-                i += 2
-            elif here == "[":
-                end = _matching_bracket(tokens, i)
-                inside = tokens[i + 1 : end]
-                if len(inside) == 1 and inside[0][0] == "string":
-                    parts.append(inside[0][1][1:-1].replace("''", "'"))
+    A reference such as ``secrets[matrix.name]`` contains another reference
+    in its brackets. Those ranges are put on a work list and read later, not
+    read by calling this function again, so deeply nested brackets in crafted
+    input cannot exhaust Python's call stack.
+    """
+    matches = _bracket_matches(tokens)
+    found: list[_Found] = []
+    ranges = [(0, len(tokens))]
+    while ranges:
+        low, high = ranges.pop()
+        i = low
+        while i < high:
+            kind, text = tokens[i]
+            is_call = i + 1 < high and tokens[i + 1][1] == "("
+            # "x).secrets" is a property of whatever the function returned,
+            # not the secrets context.
+            is_property = i > low and tokens[i - 1][1] == "."
+            if kind != "name" or is_call or is_property:
+                i += 1
+                continue
+
+            start = i
+            parts: list[str | None] = [text]
+            i += 1
+            while i < high:
+                here = tokens[i][1]
+                after = tokens[i + 1] if i + 1 < high else ("", "")
+                if here == "." and after[0] == "name":
+                    parts.append(after[1])
+                    i += 2
+                elif here == "." and after[1] == "*":
+                    parts.append("*")
+                    i += 2
+                elif here == "[":
+                    end = matches[i]
+                    if end == i + 2 and tokens[i + 1][0] == "string":
+                        parts.append(tokens[i + 1][1][1:-1].replace("''", "'"))
+                    else:
+                        parts.append(None)  # decided at run time
+                        ranges.append((i + 1, min(end, high)))  # e.g. matrix.name
+                    i = end + 1
                 else:
-                    parts.append(None)  # decided at run time
-                    found.extend(_find(inside, offset + i + 1))  # e.g. matrix.name
-                i = end + 1
-            else:
-                break
-        found.append((tuple(parts), offset + start, offset + i - 1))
+                    break
+            found.append((tuple(parts), start, i - 1))
+    # Callers expect an inner reference before the reference that contains it,
+    # which is the order of the position where each one ends.
+    found.sort(key=lambda item: item[2])
     return found
 
 
@@ -213,12 +245,22 @@ def _only_compared(
     return after in _COMPARISON_CHARS or (after == "!" and after2 == "=")
 
 
-def has_untrusted_value(text: str) -> bool:
-    """Could any ``${{ ... }}`` in this text paste outsider-controlled text into it?"""
+def pasted_references(text: str) -> list[Path]:
+    """References in the ``${{ ... }}`` of this text whose value can end up in it.
+
+    A reference that is only compared (see ``_only_compared``) is left out,
+    because it can contribute nothing but true or false.
+    """
+    found: list[Path] = []
     for body in bodies(text):
         tokens = _tokens(body)
         enclosing = _enclosing_functions(tokens)
         for path, start, end in _find(tokens):
-            if is_untrusted(path) and not _only_compared(tokens, start, end, enclosing[start]):
-                return True
-    return False
+            if not _only_compared(tokens, start, end, enclosing[start]):
+                found.append(path)
+    return found
+
+
+def has_untrusted_value(text: str) -> bool:
+    """Could any ``${{ ... }}`` in this text paste outsider-controlled text into it?"""
+    return any(is_untrusted(path) for path in pasted_references(text))

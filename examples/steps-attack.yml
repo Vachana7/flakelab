@@ -1,0 +1,17 @@
+# Only step "read" changed: its output is now the pull request title. Reading
+# the title through env is safe in that step. The later step was not edited,
+# but it pastes the output into a command, in a job that holds a secret.
+on: pull_request
+permissions:
+  contents: read
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    env:
+      CHAT_TOKEN: ${{ secrets.CHAT_TOKEN }}
+    steps:
+      - id: read
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: echo "title=$TITLE" >> "$GITHUB_OUTPUT"
+      - run: ./notify.sh "${{ steps.read.outputs.title }}"

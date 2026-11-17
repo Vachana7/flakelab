@@ -1,0 +1,18 @@
+# The same change to step "read", but the later step reads the output through
+# an environment variable. The shell treats "$TITLE" as data, not as commands.
+on: pull_request
+permissions:
+  contents: read
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    env:
+      CHAT_TOKEN: ${{ secrets.CHAT_TOKEN }}
+    steps:
+      - id: read
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: echo "title=$TITLE" >> "$GITHUB_OUTPUT"
+      - env:
+          TITLE: ${{ steps.read.outputs.title }}
+        run: ./notify.sh "$TITLE"

@@ -50,6 +50,20 @@ jobs:
           test "$code" -eq 1
       - name: The container lets an ordinary change through
         run: docker run --rm -v "$PWD/examples:/data:ro" pipedelta:ci diff /data/before.yml /data/after-safe.yml
+      - name: The container follows outsider text through job outputs and step outputs
+        run: |
+          set +e
+          docker run --rm -v "$PWD/examples:/data:ro" pipedelta:ci diff /data/outputs-before.yml /data/outputs-attack.yml
+          jobs_code=$?
+          docker run --rm -v "$PWD/examples:/data:ro" pipedelta:ci diff /data/steps-before.yml /data/steps-attack.yml
+          steps_code=$?
+          set -e
+          test "$jobs_code" -eq 1
+          test "$steps_code" -eq 1
+      - name: The safe versions of those changes pass
+        run: |
+          docker run --rm -v "$PWD/examples:/data:ro" pipedelta:ci diff /data/outputs-before.yml /data/outputs-safe.yml
+          docker run --rm -v "$PWD/examples:/data:ro" pipedelta:ci diff /data/steps-before.yml /data/steps-safe.yml
       - name: The offline demo (Docker Compose) behaves as the demo script says
         run: |
           docker compose build -q

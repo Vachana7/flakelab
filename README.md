@@ -46,14 +46,26 @@ pipeline can use it to block the change.
 
 ## The web app
 
-    pip install -e .
-    pipedelta serve        # open http://127.0.0.1:8765
+Full Windows instructions, token setup, troubleshooting and a four-minute expo
+quick start are in `docs/SETUP.md`. In short, in Windows PowerShell:
 
-Connect a GitHub repository, choose a workflow or pull request, and read the
-findings with their evidence. See `docs/PLATFORM.md`.
+    git clone https://github.com/Vachana7/pipedelta.git
+    cd pipedelta
+    git checkout platform
+    python -m venv .venv
+    .\.venv\Scripts\Activate.ps1
+    pip install -e .
+    pipedelta serve                  # then open http://127.0.0.1:8765
+
+On Linux or macOS use `source .venv/bin/activate` instead of the activate line.
+A GitHub token is optional (public repositories work without one, at 60
+requests per hour). Set it in the same terminal before starting, for example
+`$env:GITHUB_TOKEN = "..."` in PowerShell, and never share it. The server only
+answers on localhost. See `docs/PLATFORM.md` for the architecture.
 
 ## Documents
 
+- `docs/SETUP.md`: set up and run on Windows, token, troubleshooting, expo quick start
 - `docs/PLATFORM.md`: the web app, API, security choices, expo walk-through
 - `docs/EVIDENCE.md`: what each finding records
 

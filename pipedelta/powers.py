@@ -38,6 +38,9 @@ class Power:
     where: str = "workflow"  # which job it was found in
 
 
+# Action publishers that are GitHub itself.
+FIRST_PARTY = {"actions", "github"}
+
 NO_LIMIT = "repository default (no limit set in the file)"
 BUILT_IN_TOKEN = "GITHUB_TOKEN"
 

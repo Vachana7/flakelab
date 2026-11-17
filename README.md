@@ -53,11 +53,12 @@ pipeline can use it to block the change.
 
 ## Known limits
 
-- **Powers that move between jobs are under-rated.** A power is rated by
-  whether the workflow already had it, not by which job holds it. A secret
-  moved into a job that already contacts an outside address is reported as
-  low. Five tests in `tests/test_cross_job.py` record this as a known gap;
-  `docs/CROSS_JOB.md` explains it and the planned design.
+- **Only what one job holds is combined.** A new power is rated by what it
+  sits next to in its own job (a secret beside an outside address, outsider
+  text or unpinned outside code; outside code or outsider text beside a write
+  token). Data passed from one job to another through outputs, artifacts or
+  caches is not followed, and a pairing counts as new only if no job had it
+  before. `docs/CROSS_JOB.md` lists the cases this misses.
 - Secrets and outsider-controlled values are recognised inside `${{ }}` in
   dot and bracket form and in any capitalisation. Not recognised: a `}}`
   inside a quoted string, values passed between steps or jobs through
@@ -82,8 +83,12 @@ pipeline can use it to block the change.
 - Permissions are worked out per job from the file alone. The repository's
   default, organisation limits and the read-only token given to pull requests
   from forks are not visible, so some changes are reported as "unknown".
-- A removed power is reported only when it is gone from the whole workflow.
-  A secret dropped from one job but still used in another is not mentioned.
+- A power dropped from one job but still held by another is reported as a
+  reduction for that job, unless another job received it in the same change
+  (then it is treated as a move).
+- A web address written with a user name and password in front
+  (`https://user:token@host/`) is reported under the user name instead of the
+  host. Found on 17 Nov 2026 in real history; not fixed yet.
 - Trigger filters (`branches`, `types`, `paths`) and `if:` conditions are not
   modelled. Widening a filter or deleting a guard condition is not reported.
 - Scope names in `permissions:` are compared exactly as written, including

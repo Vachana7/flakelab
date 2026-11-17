@@ -31,8 +31,8 @@ def history_total(rows):
 
 
 def main() -> None:
-    a1, a2 = load("attacks-v0.1.json"), load("attacks-v0.4.json")
-    h1, h2 = load("history-v0.1.json"), load("history-v0.4.json")
+    a1, a2 = load("attacks-v0.1.json"), load("attacks-v0.5.json")
+    h1, h2 = load("history-v0.1.json"), load("history-v0.5.json")
     b1, n, v1, nv = attack_line(a1)
     b2, _, v2, _ = attack_line(a2)
     t1, m1 = history_total(h1)
@@ -51,14 +51,14 @@ def main() -> None:
     w("There are two separate tests. They answer different questions and their numbers")
     w("must not be combined.\n")
     w("## Summary\n")
-    w("| | Version 0.1 | Version 0.4 |")
+    w("| | Version 0.1 | Version 0.5 |")
     w("|---|---|---|")
     w(f"| Attack cases blocked at the default gate | {b1} of {n} | {b2} of {n} |")
     w(f"| Same, counting only cases where a workflow file changes | {v1} of {nv} | {v2} of {nv} |")
     w(
         f"| Real past workflow commits blocked at the default gate | {t1['high']} of {m1} ({t1['high'] / m1:.1%}) | {t2['high']} of {m2} ({t2['high'] / m2:.1%}) |\n"
     )
-    w("Version 0.4 is version 0.1 plus three rounds of changes, and the result files of")
+    w("Version 0.5 is version 0.1 plus four rounds of changes, and the result files of")
     w("every round are kept in `evaluation/results/`:\n")
     w(
         "- Version 0.2 changed the rules after the first test run (8 of 10 attack cases, 164 of 1659 commits)."
@@ -67,10 +67,17 @@ def main() -> None:
     w("- Version 0.4 computes each job's effective permissions instead of comparing the")
     w("  permission blocks as written, reports removed powers for every kind (including")
     w("  deleted jobs and files), and labels pinning an action as an improvement. Removals")
-    w("  and improvements never count towards the level.\n")
+    w("  and improvements never count towards the level (8 of 10, 149 of 1659).")
+    w("- Version 0.5 collects facts per job and rates a new power by what it sits next to")
+    w("  in its own job. A secret that arrives in a job which already contacts an outside")
+    w("  address, pastes outsider text into a command, or runs outside code that is not")
+    w("  locked to a commit is now high even if the workflow already used that secret")
+    w("  elsewhere. No attack case changed level. Nine real commits went up to high")
+    w("  (eight from medium, one from low) and none went down, so the count rose from")
+    w("  149 to 158. Nobody has judged whether those nine alerts were wanted.\n")
     w("Version 0.2 was written **after** looking at the version 0.1 results. Two of its")
     w("rules (hidden decoded commands, and `toJSON(secrets)`) were added because cases 03")
-    w("and 04 were missed. So the version 0.4 attack score is not independent evidence:")
+    w("and 04 were missed. So the version 0.5 attack score is not independent evidence:")
     w(
         "the tool was adjusted to those cases, and later versions inherit that. The fair statement is that version 0.1,"
     )
@@ -82,7 +89,7 @@ def main() -> None:
     w("this project from public descriptions, with harmless placeholder addresses. They are")
     w("not the original malicious files, and twelve cases is a small set chosen by the")
     w("author of the tool. Each `case.json` names its source.\n")
-    w("| Case | What it is | v0.1 | v0.4 |")
+    w("| Case | What it is | v0.1 | v0.5 |")
     w("|---|---|---|---|")
     for r1, r2 in zip(a1, a2, strict=True):
 
@@ -116,13 +123,13 @@ def main() -> None:
             f"| {r['repo']} | `{r['head'][:10]}` | {r['workflow_commits']} | {lv.get('none', 0)} | {lv.get('low', 0)} | {lv.get('medium', 0)} | {lv.get('high', 0)} |"
         )
     w(f"| **Total** | | {commits} | {t2['none']} | {t2['low']} | {t2['medium']} | {t2['high']} |\n")
-    w(f"At the default setting PipeDelta 0.4 would have blocked {t2['high']} of {m2} commits")
+    w(f"At the default setting PipeDelta 0.5 would have blocked {t2['high']} of {m2} commits")
     w(
         f"({t2['high'] / m2:.1%}). Version 0.1 blocked {t1['high']} ({t1['high'] / m1:.1%}); most of the"
     )
     w("difference came from no longer treating a version bump of an action already in use,")
     w("or a renamed job, as a new power.\n")
-    w("Why the blocked commits were blocked (counted per high-level finding, version 0.4):\n")
+    w("Why the blocked commits were blocked (counted per high-level finding, version 0.5):\n")
     w("| Reason | Findings |")
     w("|---|---|")
     for reason, count in reasons.most_common():
@@ -147,14 +154,14 @@ def main() -> None:
     w("- No measurement of whether the plain-language sentences help a human reviewer.\n")
     w("## Reproduce\n")
     w("    pip install -e .")
-    w("    python evaluation/run_attacks.py evaluation/results/attacks-v0.4.json")
+    w("    python evaluation/run_attacks.py evaluation/results/attacks-v0.5.json")
     w(
         "    git clone --no-checkout https://github.com/pallets/flask /tmp/hist/flask   # and the others"
     )
-    w("    python evaluation/run_history.py evaluation/results/history-v0.4.json /tmp/hist/*")
+    w("    python evaluation/run_history.py evaluation/results/history-v0.5.json /tmp/hist/*")
     w("    python evaluation/write_report.py\n")
     w(
-        "The version 0.1 result files were produced by commit `6492d9f`, version 0.2 by `2666b68` and version 0.3 by `594e8ec`."
+        "The version 0.1 result files were produced by commit `6492d9f`, version 0.2 by `2666b68`, version 0.3 by `594e8ec` and version 0.4 by `c5adc25`."
     )
     Path("docs/EVALUATION.md").write_text("\n".join(out) + "\n")
 

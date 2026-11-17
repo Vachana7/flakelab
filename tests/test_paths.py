@@ -150,3 +150,37 @@ def test_the_raised_finding_says_what_the_power_is_now_next_to():
     assert secret.level == "high"
     assert "'b'" in secret.message
     assert "outsider" in secret.message
+
+
+def test_only_the_part_that_arrived_is_raised():
+    """Seen in real history (rich, commit 0845382): the job already ran an
+    unpinned outside action; one commit changed its version and added a secret.
+    The secret arrived, so its finding is high. The version change stays low."""
+    old = HEAD + "  a:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: someone/tool@v1\n"
+    new = (
+        HEAD
+        + "  a:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: someone/tool@v2\n"
+        + "        env:\n          K: ${{ secrets.DEPLOY_KEY }}\n"
+    )
+    by_kind = {f.power.kind: f for f in compare(old, new)}
+    assert by_kind["secret"].level == "high"
+    assert by_kind["action"].level == "low"
+    assert "dangerous combination" not in by_kind["action"].message
+
+
+def test_secret_moved_to_workflow_level_reaches_a_job_with_outside_code():
+    """Seen in real history (fastapi, commit a329baa): a secret used by one job
+    was moved to the workflow-level env, so every job can read it, including
+    one that runs unpinned outside code."""
+    old = (
+        HEAD
+        + "  a:\n    runs-on: ubuntu-latest\n    env:\n      K: ${{ secrets.DEPLOY_KEY }}\n"
+        + "    steps:\n      - run: make\n"
+        + "  b:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: someone/tool@v1\n"
+    )
+    new = (
+        "on: push\npermissions:\n  contents: read\nenv:\n  K: ${{ secrets.DEPLOY_KEY }}\njobs:\n"
+        + "  a:\n    runs-on: ubuntu-latest\n    steps:\n      - run: make\n"
+        + "  b:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: someone/tool@v1\n"
+    )
+    assert overall(compare(old, new)) == "high"

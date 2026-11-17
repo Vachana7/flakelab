@@ -124,6 +124,7 @@ class Span:
 class StepSite:
     span: Span
     label: str
+    kind: str = "step"  # "action" (uses:), "run" or "step"
 
 
 @dataclass
@@ -203,23 +204,24 @@ class SourceMap:
                 )
                 if field_name == "steps" and isinstance(field_value, yaml.SequenceNode):
                     for step_node in field_value.value:
-                        site.steps.append(
-                            StepSite(_span(step_node, self.lines), self._label(step_node))
-                        )
+                        label, kind = self._label(step_node)
+                        site.steps.append(StepSite(_span(step_node, self.lines), label, kind))
             self.jobs[_short(name, 100)] = site
 
     @staticmethod
-    def _label(step_node: yaml.Node) -> str:
+    def _label(step_node: yaml.Node) -> tuple[str, str]:
+        """A short name for a step and what kind it is."""
         fields = {k: v for k, _, v in _mapping(step_node)}
+        kind = "action" if "uses" in fields else "run" if "run" in fields else "step"
         for name in ("name", "uses"):
             value = fields.get(name)
             if isinstance(value, yaml.ScalarNode) and str(value.value).strip():
-                return _short(str(value.value))
+                return _short(str(value.value)), kind
         run = fields.get("run")
         if isinstance(run, yaml.ScalarNode):
             first = next((ln for ln in str(run.value).splitlines() if ln.strip()), "")
-            return _short("run: " + first)
-        return "step"
+            return _short("run: " + first), kind
+        return "step", kind
 
     def find(self, span: Span, test: Callable[[str], object]) -> int | None:
         """The first line (0-based) in the span for which ``test`` is true."""

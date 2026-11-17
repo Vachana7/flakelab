@@ -44,7 +44,18 @@ projects. A results page is in `dashboard/index.html` (open it in a browser).
 The command exits with an error when a change adds a high-level power, so a
 pipeline can use it to block the change.
 
+## The web app
+
+    pip install -e .
+    pipedelta serve        # open http://127.0.0.1:8765
+
+Connect a GitHub repository, choose a workflow or pull request, and read the
+findings with their evidence. See `docs/PLATFORM.md`.
+
 ## Documents
+
+- `docs/PLATFORM.md`: the web app, API, security choices, expo walk-through
+- `docs/EVIDENCE.md`: what each finding records
 
 - `docs/DEMO.md`: expo demo script and likely examiner questions
 - `docs/EVALUATION.md`: what was measured and what was not

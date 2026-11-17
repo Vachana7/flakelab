@@ -233,3 +233,16 @@ def test_delete_analysis(base: str) -> None:
     _, a, _ = call(base, "/api/analyses", {"mode": "sample", "sample": "ordinary-change"})
     assert call(base, f"/api/analyses/{a['id']}", method="DELETE")[0] == 200
     assert call(base, f"/api/analyses/{a['id']}")[0] == 404
+
+
+def test_app_page_and_assets_are_served(base: str) -> None:
+    for path, kind in (("/", "text/html"), ("/app.js", "javascript"), ("/app.css", "text/css")):
+        request = urllib.request.Request(base + path)
+        with urllib.request.urlopen(request) as r:
+            assert r.status == 200 and kind in r.headers["Content-Type"]
+            assert "default-src 'self'" in r.headers["Content-Security-Policy"]
+    request = urllib.request.Request(base + "/..%2f..%2fpyproject.toml")
+    try:
+        urllib.request.urlopen(request)
+    except urllib.error.HTTPError as e:
+        assert e.code == 404

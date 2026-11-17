@@ -1,0 +1,17 @@
+# Throwaway rehearsal file for checking PipeDelta on GitHub. Never runs:
+# it can only be started by hand, and this branch is never merged.
+name: Rehearsal notify
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    env:
+      CHAT_TOKEN: ${{ secrets.CHAT_TOKEN }}
+    steps:
+      - id: read
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: echo "title=$TITLE" >> "$GITHUB_OUTPUT"
+      - run: ./notify.sh "${{ steps.read.outputs.title }}"

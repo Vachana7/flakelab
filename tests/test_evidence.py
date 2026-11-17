@@ -97,7 +97,7 @@ def test_snippet_shows_the_line_with_up_to_two_lines_of_context_each_side():
     network = one(explain(BEFORE, AFTER, "ci.yml"), "network")
     assert [s.number for s in network.snippet] == [12, 13, 14, 15]
     assert [s.number for s in network.snippet if s.hit] == [14]
-    assert "stats.example.org" in [s.text for s in network.snippet if s.hit][0]
+    assert "stats.example.org" in next(s.text for s in network.snippet if s.hit)
 
 
 def test_snippet_near_the_start_of_the_file_is_not_padded():
@@ -239,12 +239,17 @@ def test_nothing_changed_gives_no_evidence():
 # ---- hostile and damaged input ---------------------------------------------------
 
 
-def test_control_characters_in_names_and_lines_are_removed():
+def test_control_characters_in_values_are_removed():
+    """PyYAML rejects a raw ESC byte in the file, but a quoted \\x1b escape is legal YAML
+    and becomes a real ESC character in the value."""
     old = "on: push\njobs:\n  a:\n    runs-on: x\n    steps:\n      - run: make\n"
-    new = old + "      - run: curl https://evil.example/\x1b[31m red\n"
-    for e in explain(old, new, "f.yml"):
-        blob = json.dumps(e.to_dict())
-        assert "\\u001b" not in blob and "\x1b" not in blob
+    new = old + '      - run: "curl https://evil.example/\\x1b[31m red"\n'
+    new = new.replace("  a:\n", '  "a\\x1b[2J":\n', 1)
+    found = explain(old, new, "f.yml")
+    assert found
+    for e in found:
+        blob = json.dumps(e.to_dict(), ensure_ascii=False)
+        assert "\x1b" not in blob
 
 
 def test_very_long_lines_are_cut_in_the_snippet():

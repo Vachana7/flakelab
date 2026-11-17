@@ -1,19 +1,33 @@
-# Known limitation: powers that move between jobs
+# Powers that move between jobs
 
-Status: **not implemented**. Recorded on 16 Nov 2026. Deferred until after the expo.
+Status: **same-job combinations implemented** in version 0.5 (17 Nov 2026,
+`pipedelta/jobs.py` and `pipedelta/paths.py`). Data passed from one job to
+another is still not followed.
 
-## What happens today
+## The problem
 
-PipeDelta decides whether a power is new by asking "did this workflow have it
-anywhere before?". If the answer is yes, a power that turns up in another job
-is reported as low ("already present in this workflow; now also in job X").
+Until version 0.5 PipeDelta decided whether a power was new by asking "did
+this workflow have it anywhere before?". A power that turned up in another
+job was low ("already present in this workflow; now also in job X").
 
 Steps in one job share a machine, a token and environment variables. Separate
-jobs do not. So which job holds a power matters, and the tool does not look.
+jobs do not. So which job holds a power matters.
 
-## Effect on findings
+## What version 0.5 does
 
-| Change | Reported today | Should be |
+1. `job_facts()` makes one record per job: stored secrets, outside addresses,
+   unpinned outside actions, what the token can write, outsider text in a
+   command, hidden decoded commands, own machine.
+2. `paths_in()` lists every dangerous pairing inside a job from a fixed table
+   (a way in or out, plus a secret or a write token).
+3. A pairing is identified by its parts, for example
+   (address stats.example.org, secret DEPLOY_KEY). The job name is not part of
+   it. `new_paths()` returns pairings that no job had before the change.
+4. `compare()` raises the finding for the part that arrived to the pairing's
+   level and adds a sentence saying what it now sits next to. No finding is
+   added and none is lowered.
+
+| Change | Before 0.5 | Version 0.5 |
 | --- | --- | --- |
 | A secret moves into a job that already contacts an outside address | low | high |
 | A secret moves into a job that pastes outsider text into a command | low | high |
@@ -21,23 +35,56 @@ jobs do not. So which job holds a power matters, and the tool does not look.
 | An unpinned outside action moves into a job whose token can write | low | high |
 | A power leaves one job but stays in another | nothing | a reduction note |
 
-The first row is the tool's own headline rule (secret plus outside address)
-failing when the secret is moved instead of added. A reviewer relying on the
-level alone would let it through.
+These five are tests in `tests/test_cross_job.py`. They were expected
+failures until version 0.5; the markers were removed when they passed and the
+test bodies were not changed. Three control tests in the same file (rename,
+move between equally exposed jobs, copy into an equally exposed job) still
+pass. `tests/test_paths.py` has the tests for the new modules.
 
-**Do not claim that PipeDelta detects cross-job capability movement.** It
-reports the move, at low level, without saying what it is now next to.
+## What it still does not do
 
-These five cases are tests in `tests/test_cross_job.py`, marked as expected
-failures. Three control tests in the same file (rename, move between equally
-exposed jobs, copy into an equally exposed job) pass and must keep passing.
+**Do not claim that PipeDelta follows data between jobs.** It only looks at
+what one job holds.
+
+- A pairing is new only if it existed in no job. If a secret sat beside an
+  address in job A and beside an injection in job C, moving it into job B
+  that has both is low, because both pairings existed before.
+- A secret moving from a read-only-token job to a write-token job with no way
+  in (no address, outside code or outsider text) is low. So is a move into a
+  job whose permissions cannot be worked out: an unknown token is never
+  assumed to be able to write.
+- A secret in a workflow that runs on `pull_request_target` is not a pairing,
+  because the danger depends on whether the job checks out the outsider's
+  code, which is not detected.
+- Pairings that are not in the table are not seen.
+- `if:` conditions: two jobs with the same facts and different guards look the same.
+- Values passed between jobs through outputs, artifacts or caches, and
+  anything in another file.
+- It says what the file makes possible. It does not show that a secret is
+  actually sent anywhere.
+
+## Effect on real history
+
+No attack case changed level. Of 1,659 real workflow commits, nine went up
+to high (eight from medium, one from low) and none went down: 149 blocked
+became 158. All nine are a secret arriving in a job beside unpinned outside
+code (seven), an outside address (one) or outsider text in a command (one).
+
+A fix made afterwards in the same version (a login in front of a host is no
+longer read as the host) made one more address visible. One more commit went
+from medium to high: 159. In that commit a secret used as the login for
+github.com was replaced by a differently named secret, so the pairing is new
+by name although the workflow does the same thing as before.
+
+Nobody has judged whether those ten alerts were wanted, so this is alert
+volume and not accuracy.
 
 ## Designs compared
 
 Three candidate models were prototyped in a scratch script and run on ten
 scenarios. The cell is the highest level each would report.
 
-| Scenario | Should be | Today | Subset, yes/no facts | Subset, concrete facts | Combination instances |
+| Scenario | Should be | Before 0.5 | Subset, yes/no facts | Subset, concrete facts | Combination instances |
 | --- | --- | --- | --- | --- | --- |
 | Two earlier holders, one talks to a trusted host; secret added to a job that talks to a new host | high | low | low | high | high |
 | Secret was beside an address in job A and an injection in job C; now in job B with both | debatable | low | high | high | low |
@@ -57,7 +104,7 @@ scenarios. The cell is the highest level each would report.
   workable and the more cautious option. Harder to explain, depends on
   unrelated jobs, and raises findings for a secret beside a broader token
   with no way in.
-- **Combination instances** (recommended): list each dangerous pairing inside
+- **Combination instances** (chosen): list each dangerous pairing inside
   a job, keyed by its members and not by the job name, for example
   (secret + address, DEPLOY_KEY, stats.example.org). Pairings present after
   and absent before are new; the reverse are reductions. Renames need no
@@ -66,16 +113,5 @@ scenarios. The cell is the highest level each would report.
 The choice between the last two should be made by running both over the
 commit history and a labelled benchmark. That has not been done.
 
-## Planned shape
-
-1. One record per job: effective token, secrets, addresses, outside code,
-   runner, injection, hidden execution. (`Token` already exists.)
-2. Per-job diff for display, jobs matched by name.
-3. A fixed table of dangerous pairings evaluated inside each job.
-4. Levels from the pairings that are new.
-
-## What even the planned design will not see
-
-- Pairings that are not in the table.
-- `if:` conditions: two jobs with the same facts and different guards look the same.
-- Values passed between jobs through outputs, and anything in another file.
+Version 0.5 implements combination instances. The comparison against the
+concrete-subset model on a labelled benchmark has still not been done.

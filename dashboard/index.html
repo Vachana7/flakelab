@@ -101,18 +101,18 @@ footer{margin-top:56px;color:var(--ink2);font-size:.88rem}
 <p class="muted">This example is a harmless imitation. The action and the address in it do not exist. The report on the right is the tool's real output for the change on the left.</p>
 
 <h2>How well does it work?</h2>
-<p>Two separate tests. Version 0.4 was written after looking at the version 0.1 results, so its attack score is not independent evidence.</p>
+<p>Two separate tests. Version 0.5 was written after looking at the version 0.1 results, so its attack score is not independent evidence.</p>
 <div class="tiles">
   <div class="tile"><b>6 of 10</b><span>attack cases blocked by the first version, written before any testing</span></div>
-  <div class="tile"><b>8 of 10</b><span>blocked by version 0.4, after two rules were added for the misses, bugs were fixed and permission handling was corrected</span></div>
-  <div class="tile"><b>9.0%</b><span>of 1659 real past pipeline changes would have been blocked (23.1% in the first version)</span></div>
+  <div class="tile"><b>8 of 10</b><span>blocked by version 0.5, after two rules were added for the misses, bugs were fixed, permission handling was corrected and powers were rated per job</span></div>
+  <div class="tile"><b>9.6%</b><span>of 1659 real past pipeline changes would have been blocked (23.1% in the first version)</span></div>
 </div>
 
 <h2>Test 1: reconstructed attack cases</h2>
 <p>12 cases written for this project from public reports of real attacks, with placeholder addresses. They are not the original malicious files. In two of them nothing changes in the victim's workflow file, so no tool of this kind can see them.</p>
 <div class="card">
 <table>
-<thead><tr><th>#</th><th>Case</th><th>Version 0.1</th><th>Version 0.4</th></tr></thead>
+<thead><tr><th>#</th><th>Case</th><th>Version 0.1</th><th>Version 0.5</th></tr></thead>
 <tbody>
 <tr><td>01</td><td>New workflow posts a named secret to an outside address (GhostAction 2025 shape)</td><td class="st st-ok">blocked</td><td class="st st-ok">blocked</td></tr>
 <tr><td>02</td><td>New workflow sends named secrets over plain HTTP (GhostAction 2026 shape)</td><td class="st st-ok">blocked</td><td class="st st-ok">blocked</td></tr>
@@ -131,39 +131,39 @@ footer{margin-top:56px;color:var(--ink2);font-size:.88rem}
 </div>
 
 <h2>Test 2: real pipeline history of eight projects</h2>
-<p>Every past commit that changed a workflow file in eight well-known Python projects, replayed through PipeDelta 0.4.0. Each bar shows how those commits were rated. Only git history was read.</p>
+<p>Every past commit that changed a workflow file in eight well-known Python projects, replayed through PipeDelta 0.5.0. Each bar shows how those commits were rated. Only git history was read.</p>
 <div class="card">
   <div class="legend"><span><i class="seg-none"></i>No new power</span><span><i class="seg-low"></i>Low</span><span><i class="seg-medium"></i>Medium</span><span><i class="seg-high"></i>High (blocked)</span></div>
 <div class="row"><div class="name">flask<small>99 commits</small></div><div class="bar"><div class="seg seg-none" style="flex:42 1 0" tabindex="0" data-tip="flask: No new power, 42 of 99 commits (42.4%)">42%</div><div class="seg seg-low" style="flex:49 1 0" tabindex="0" data-tip="flask: Low, 49 of 99 commits (49.5%)">49%</div><div class="seg seg-medium" style="flex:5 1 0" tabindex="0" data-tip="flask: Medium, 5 of 99 commits (5.1%)"></div><div class="seg seg-high" style="flex:3 1 0" tabindex="0" data-tip="flask: High (blocked), 3 of 99 commits (3.0%)"></div></div></div>
 <div class="row"><div class="name">requests<small>107 commits</small></div><div class="bar"><div class="seg seg-none" style="flex:39 1 0" tabindex="0" data-tip="requests: No new power, 39 of 107 commits (36.4%)">36%</div><div class="seg seg-low" style="flex:59 1 0" tabindex="0" data-tip="requests: Low, 59 of 107 commits (55.1%)">55%</div><div class="seg seg-medium" style="flex:3 1 0" tabindex="0" data-tip="requests: Medium, 3 of 107 commits (2.8%)"></div><div class="seg seg-high" style="flex:6 1 0" tabindex="0" data-tip="requests: High (blocked), 6 of 107 commits (5.6%)"></div></div></div>
 <div class="row"><div class="name">httpx<small>28 commits</small></div><div class="bar"><div class="seg seg-none" style="flex:18 1 0" tabindex="0" data-tip="httpx: No new power, 18 of 28 commits (64.3%)">64%</div><div class="seg seg-low" style="flex:8 1 0" tabindex="0" data-tip="httpx: Low, 8 of 28 commits (28.6%)">29%</div><div class="seg seg-medium" style="flex:2 1 0" tabindex="0" data-tip="httpx: Medium, 2 of 28 commits (7.1%)"></div></div></div>
-<div class="row"><div class="name">rich<small>123 commits</small></div><div class="bar"><div class="seg seg-none" style="flex:88 1 0" tabindex="0" data-tip="rich: No new power, 88 of 123 commits (71.5%)">72%</div><div class="seg seg-low" style="flex:20 1 0" tabindex="0" data-tip="rich: Low, 20 of 123 commits (16.3%)">16%</div><div class="seg seg-medium" style="flex:5 1 0" tabindex="0" data-tip="rich: Medium, 5 of 123 commits (4.1%)"></div><div class="seg seg-high" style="flex:10 1 0" tabindex="0" data-tip="rich: High (blocked), 10 of 123 commits (8.1%)"></div></div></div>
+<div class="row"><div class="name">rich<small>123 commits</small></div><div class="bar"><div class="seg seg-none" style="flex:88 1 0" tabindex="0" data-tip="rich: No new power, 88 of 123 commits (71.5%)">72%</div><div class="seg seg-low" style="flex:20 1 0" tabindex="0" data-tip="rich: Low, 20 of 123 commits (16.3%)">16%</div><div class="seg seg-medium" style="flex:4 1 0" tabindex="0" data-tip="rich: Medium, 4 of 123 commits (3.3%)"></div><div class="seg seg-high" style="flex:11 1 0" tabindex="0" data-tip="rich: High (blocked), 11 of 123 commits (8.9%)"></div></div></div>
 <div class="row"><div class="name">black<small>275 commits</small></div><div class="bar"><div class="seg seg-none" style="flex:99 1 0" tabindex="0" data-tip="black: No new power, 99 of 275 commits (36.0%)">36%</div><div class="seg seg-low" style="flex:152 1 0" tabindex="0" data-tip="black: Low, 152 of 275 commits (55.3%)">55%</div><div class="seg seg-medium" style="flex:10 1 0" tabindex="0" data-tip="black: Medium, 10 of 275 commits (3.6%)"></div><div class="seg seg-high" style="flex:14 1 0" tabindex="0" data-tip="black: High (blocked), 14 of 275 commits (5.1%)"></div></div></div>
-<div class="row"><div class="name">pydantic<small>421 commits</small></div><div class="bar"><div class="seg seg-none" style="flex:224 1 0" tabindex="0" data-tip="pydantic: No new power, 224 of 421 commits (53.2%)">53%</div><div class="seg seg-low" style="flex:139 1 0" tabindex="0" data-tip="pydantic: Low, 139 of 421 commits (33.0%)">33%</div><div class="seg seg-medium" style="flex:19 1 0" tabindex="0" data-tip="pydantic: Medium, 19 of 421 commits (4.5%)"></div><div class="seg seg-high" style="flex:39 1 0" tabindex="0" data-tip="pydantic: High (blocked), 39 of 421 commits (9.3%)">9%</div></div></div>
-<div class="row"><div class="name">pytest<small>255 commits</small></div><div class="bar"><div class="seg seg-none" style="flex:99 1 0" tabindex="0" data-tip="pytest: No new power, 99 of 255 commits (38.8%)">39%</div><div class="seg seg-low" style="flex:133 1 0" tabindex="0" data-tip="pytest: Low, 133 of 255 commits (52.2%)">52%</div><div class="seg seg-medium" style="flex:6 1 0" tabindex="0" data-tip="pytest: Medium, 6 of 255 commits (2.4%)"></div><div class="seg seg-high" style="flex:17 1 0" tabindex="0" data-tip="pytest: High (blocked), 17 of 255 commits (6.7%)"></div></div></div>
-<div class="row"><div class="name">fastapi<small>351 commits</small></div><div class="bar"><div class="seg seg-none" style="flex:143 1 0" tabindex="0" data-tip="fastapi: No new power, 143 of 351 commits (40.7%)">41%</div><div class="seg seg-low" style="flex:126 1 0" tabindex="0" data-tip="fastapi: Low, 126 of 351 commits (35.9%)">36%</div><div class="seg seg-medium" style="flex:22 1 0" tabindex="0" data-tip="fastapi: Medium, 22 of 351 commits (6.3%)"></div><div class="seg seg-high" style="flex:60 1 0" tabindex="0" data-tip="fastapi: High (blocked), 60 of 351 commits (17.1%)">17%</div></div></div>
+<div class="row"><div class="name">pydantic<small>421 commits</small></div><div class="bar"><div class="seg seg-none" style="flex:224 1 0" tabindex="0" data-tip="pydantic: No new power, 224 of 421 commits (53.2%)">53%</div><div class="seg seg-low" style="flex:139 1 0" tabindex="0" data-tip="pydantic: Low, 139 of 421 commits (33.0%)">33%</div><div class="seg seg-medium" style="flex:18 1 0" tabindex="0" data-tip="pydantic: Medium, 18 of 421 commits (4.3%)"></div><div class="seg seg-high" style="flex:40 1 0" tabindex="0" data-tip="pydantic: High (blocked), 40 of 421 commits (9.5%)">10%</div></div></div>
+<div class="row"><div class="name">pytest<small>255 commits</small></div><div class="bar"><div class="seg seg-none" style="flex:99 1 0" tabindex="0" data-tip="pytest: No new power, 99 of 255 commits (38.8%)">39%</div><div class="seg seg-low" style="flex:133 1 0" tabindex="0" data-tip="pytest: Low, 133 of 255 commits (52.2%)">52%</div><div class="seg seg-medium" style="flex:5 1 0" tabindex="0" data-tip="pytest: Medium, 5 of 255 commits (2.0%)"></div><div class="seg seg-high" style="flex:18 1 0" tabindex="0" data-tip="pytest: High (blocked), 18 of 255 commits (7.1%)"></div></div></div>
+<div class="row"><div class="name">fastapi<small>351 commits</small></div><div class="bar"><div class="seg seg-none" style="flex:143 1 0" tabindex="0" data-tip="fastapi: No new power, 143 of 351 commits (40.7%)">41%</div><div class="seg seg-low" style="flex:125 1 0" tabindex="0" data-tip="fastapi: Low, 125 of 351 commits (35.6%)">36%</div><div class="seg seg-medium" style="flex:16 1 0" tabindex="0" data-tip="fastapi: Medium, 16 of 351 commits (4.6%)"></div><div class="seg seg-high" style="flex:67 1 0" tabindex="0" data-tip="fastapi: High (blocked), 67 of 351 commits (19.1%)">19%</div></div></div>
   <details><summary>Show the numbers as a table</summary>
   <table class="num"><thead><tr><th>Project</th><th>No new power</th><th>Low</th><th>Medium</th><th>High (blocked)</th></tr></thead>
   <tbody>
 <tr><td>flask</td><td>42</td><td>49</td><td>5</td><td>3</td></tr>
 <tr><td>requests</td><td>39</td><td>59</td><td>3</td><td>6</td></tr>
 <tr><td>httpx</td><td>18</td><td>8</td><td>2</td><td>0</td></tr>
-<tr><td>rich</td><td>88</td><td>20</td><td>5</td><td>10</td></tr>
+<tr><td>rich</td><td>88</td><td>20</td><td>4</td><td>11</td></tr>
 <tr><td>black</td><td>99</td><td>152</td><td>10</td><td>14</td></tr>
-<tr><td>pydantic</td><td>224</td><td>139</td><td>19</td><td>39</td></tr>
-<tr><td>pytest</td><td>99</td><td>133</td><td>6</td><td>17</td></tr>
-<tr><td>fastapi</td><td>143</td><td>126</td><td>22</td><td>60</td></tr>
-<tr class="total"><td>Total</td><td>752</td><td>686</td><td>72</td><td>149</td></tr>
+<tr><td>pydantic</td><td>224</td><td>139</td><td>18</td><td>40</td></tr>
+<tr><td>pytest</td><td>99</td><td>133</td><td>5</td><td>18</td></tr>
+<tr><td>fastapi</td><td>143</td><td>125</td><td>16</td><td>67</td></tr>
+<tr class="total"><td>Total</td><td>752</td><td>685</td><td>63</td><td>159</td></tr>
   </tbody></table></details>
 </div>
-<p>These commits are not labelled, so 9.0% is a block rate, not a false-alarm rate. None of them is a known attack. About one in ten is too many for a strict gate on a busy project; today the tool fits best as an advisory comment.</p>
+<p>These commits are not labelled, so 9.6% is a block rate, not a false-alarm rate. None of them is a known attack. About one in ten is too many for a strict gate on a busy project; today the tool fits best as an advisory comment.</p>
 <div class="card">
-<table class="num"><thead><tr><th>Why commits were blocked (high-level findings, version 0.4)</th><th>Findings</th></tr></thead>
+<table class="num"><thead><tr><th>Why commits were blocked (high-level findings, version 0.5)</th><th>Findings</th></tr></thead>
 <tbody>
-<tr><td>outside action not locked to a commit</td><td>250</td></tr>
+<tr><td>outside action not locked to a commit</td><td>253</td></tr>
 <tr><td>write permission</td><td>76</td></tr>
+<tr><td>secret and new network address in the same job</td><td>64</td></tr>
 <tr><td>trigger pull_request_target</td><td>14</td></tr>
-<tr><td>secret and new network address in the same job</td><td>12</td></tr>
 <tr><td>injection</td><td>4</td></tr>
 <tr><td>trigger workflow_run</td><td>4</td></tr>
 <tr><td>trigger issue_comment</td><td>3</td></tr>
@@ -179,7 +179,7 @@ footer{margin-top:56px;color:var(--ink2);font-size:.88rem}
 <li>It has not been compared against existing scanners on the same cases.</li>
 </ul>
 
-<footer>PipeDelta 0.4.0. Numbers on this page are generated from <code>evaluation/results/</code> by <code>evaluation/build_dashboard.py</code>. Method and limits: <code>docs/EVALUATION.md</code>.</footer>
+<footer>PipeDelta 0.5.0. Numbers on this page are generated from <code>evaluation/results/</code> by <code>evaluation/build_dashboard.py</code>. Method and limits: <code>docs/EVALUATION.md</code>.</footer>
 </main>
 <div id="tip" role="status"></div>
 <script>

@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import yaml
 
+from .jobs import JobFacts, job_facts
+from .paths import AttackPath, Member, holds, new_paths
 from .permissions import (
     CANNOT_TELL,
     INCREASE,
@@ -23,6 +25,7 @@ from .permissions import (
 )
 from .powers import (
     BUILT_IN_TOKEN,
+    FIRST_PARTY,
     RISKY_TRIGGERS,
     Power,
     action_name,
@@ -30,9 +33,6 @@ from .powers import (
     extract_powers,
     is_pinned,
 )
-
-# Action publishers that come from GitHub itself.
-FIRST_PARTY = {"actions", "github"}
 
 LEVELS = ["low", "medium", "high"]
 
@@ -144,6 +144,62 @@ def _combine(findings: list[Finding], gained: set[Power], after: set[Power]) -> 
     return out
 
 
+def _member(power: Power, path: AttackPath) -> Member | None:
+    """The part of the path that this power is, if it is one, in a job that holds the path."""
+    if power.where not in path.jobs and power.where != "workflow":
+        return None
+    for member in (path.first, path.second):
+        kind, name = member
+        if power.kind != kind:
+            continue
+        if kind == "action":
+            if action_name(power.name) == name:
+                return member
+        elif not name or power.name == name:
+            return member
+    return None
+
+
+def _raise_for_new_paths(
+    findings: list[Finding],
+    gained: set[Power],
+    paths: list[AttackPath],
+    old_jobs: dict[str, JobFacts],
+) -> list[Finding]:
+    """Rate a gained power by what it now sits next to in its job.
+
+    A secret that "already existed in the workflow" is low by itself. If it
+    arrives in a job where it forms a path that existed nowhere before, the
+    finding takes the path's level and says why.
+
+    Only the part that arrived is raised. If a job already ran an unpinned
+    action and now gains a secret, the secret's finding is raised; a version
+    change of that action in the same commit is not, because the job held
+    that part already.
+
+    Findings are only ever raised here, never lowered, and none is added.
+    """
+    out: list[Finding] = []
+    for f in findings:
+        if f.change == "gained" and f.power in gained:
+            for path in paths:
+                member = _member(f.power, path)
+                if member is None:
+                    continue
+                job_before = old_jobs.get(f.power.where)
+                if job_before is not None and holds(job_before, member):
+                    continue  # this job had that part before; the other part is what arrived
+                if LEVELS.index(path.level) > LEVELS.index(f.level):
+                    where = _place(list(path.jobs))
+                    f = replace(
+                        f,
+                        level=path.level,
+                        message=f"{f.message} New dangerous combination in {where}: {path.reason}.",
+                    )
+        out.append(f)
+    return out
+
+
 def _already_had(power: Power, before: set[Power]) -> Finding | None:
     """Handle powers the workflow already had in some form before the change.
 
@@ -229,17 +285,35 @@ def _same_power(a: Power, b: Power) -> bool:
     return a.name == b.name
 
 
-def _removal_findings(before: set[Power], after: set[Power]) -> list[Finding]:
-    """Powers the workflow had before and has nowhere after the change.
+def _removal_findings(before: set[Power], after: set[Power], jobs_after: set[str]) -> list[Finding]:
+    """Powers that were taken away.
 
-    A power that merely moved to another job (or whose job was renamed) is
-    still in the workflow, so it is not a removal.
+    Gone from the whole workflow: one finding per power.
+    Gone from one job but still held by another: a finding for that job,
+    unless another job newly received it (it moved) or the job no longer
+    exists under that name (it was renamed). Those two are not reductions.
     """
     gone: dict[tuple[str, str], list[str]] = {}
+    narrowed: list[Finding] = []
     for power in before - after:
         if power.kind == "permission":
             continue  # handled from the effective tokens
         if any(_same_power(power, other) for other in after):
+            # Still in the workflow. If its job still exists and no job newly
+            # received it, the power was simply taken away from that job.
+            # (If another job received it, it moved; a renamed job no longer
+            # exists under the old name. Neither is a reduction.)
+            moved = any(_same_power(power, other) for other in after - before)
+            if power.where in jobs_after and not moved:
+                narrowed.append(
+                    Finding(
+                        "low",
+                        power,
+                        f"Job '{power.where}': {_removal_sentence(power.kind, power.name)} "
+                        "It is still present in another job.",
+                        change="reduced",
+                    )
+                )
             continue
         gone.setdefault((power.kind, power.name), []).append(power.where)
     return [
@@ -250,7 +324,7 @@ def _removal_findings(before: set[Power], after: set[Power]) -> list[Finding]:
             change="reduced",
         )
         for (kind, name), places in gone.items()
-    ]
+    ] + narrowed
 
 
 NOTHING = Token(default=NONE)  # what a job that did not exist before could do
@@ -400,7 +474,11 @@ def compare(before_text: str | None, after_text: str | None) -> list[Finding]:
             truly_new.add(power)
             findings.append(_explain(power, after))
     findings = _combine(findings, truly_new, after)
-    findings += _removal_findings(before, after)
+    findings = _raise_for_new_paths(
+        findings, gained, new_paths(before_text, after_text), job_facts(before_text)
+    )
+    jobs_after = set(job_tokens(yaml.safe_load(after_text))) if after_text else set()
+    findings += _removal_findings(before, after, jobs_after)
     findings += _permission_findings(before_text, after_text)
     findings.sort(key=lambda f: (f.change in NOT_COUNTED, -LEVELS.index(f.level), f.power))
     return findings

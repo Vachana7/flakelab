@@ -1,23 +1,15 @@
 """A power that leaves one job and appears in another.
 
-KNOWN LIMITATION, kept as evidence. PipeDelta rates a power by whether the
-workflow has it anywhere, not by which job holds it. The five tests marked
-``known_gap`` describe the correct behaviour and FAIL today. They are marked
-as expected failures so the suite stays green while the gap stays visible.
-``strict=True`` means that the day the behaviour is fixed, these tests will
-report an unexpected pass and the marker must be removed.
+History: until Stage 1 (17 Nov 2026) PipeDelta rated a power by whether the
+workflow had it anywhere, and five of these tests were marked as expected
+failures. Per-job facts and same-job attack paths (pipedelta/jobs.py,
+pipedelta/paths.py) now make them pass, so the markers were removed. The
+test bodies are unchanged.
 
-Design notes and the scenarios to implement: docs/CROSS_JOB.md
+Design notes: docs/CROSS_JOB.md
 """
 
-import pytest
-
 from pipedelta.delta import compare, overall
-
-known_gap = pytest.mark.xfail(
-    strict=True,
-    reason="cross-job movement is not modelled yet; see docs/CROSS_JOB.md",
-)
 
 HEAD = "on: push\npermissions:\n  contents: read\njobs:\n"
 SECRET = "        env:\n          K: ${{ secrets.DEPLOY_KEY }}\n"
@@ -34,7 +26,6 @@ def about(findings, kind):
 # --- moves that change how exposed the power is: must NOT be merely low --------
 
 
-@known_gap
 def test_secret_moves_into_a_job_that_already_contacts_an_outside_address():
     quiet = job("build", body="      - run: make\n" + SECRET)
     talks = job("report", body="      - run: curl https://stats.example.org/up\n")
@@ -49,7 +40,6 @@ def test_secret_moves_into_a_job_that_already_contacts_an_outside_address():
     assert any("report" in f.message for f in about(findings, "secret"))
 
 
-@known_gap
 def test_secret_moves_into_a_job_that_pastes_outsider_text_into_a_command():
     inject = '      - run: echo "${{ github.event.pull_request.title }}"\n'
     old = HEAD + job("build", body="      - run: make\n" + SECRET) + job("label", body=inject)
@@ -57,7 +47,6 @@ def test_secret_moves_into_a_job_that_pastes_outsider_text_into_a_command():
     assert overall(compare(old, new)) == "high"
 
 
-@known_gap
 def test_secret_moves_onto_a_self_hosted_runner():
     old = (
         HEAD
@@ -74,7 +63,6 @@ def test_secret_moves_onto_a_self_hosted_runner():
     assert max(findings, key=lambda f: ["low", "medium", "high"].index(f.level)).level != "low"
 
 
-@known_gap
 def test_outside_action_moves_into_a_job_whose_token_can_write():
     step = "      - uses: someone/tool@v1\n"
     write = "    permissions:\n      contents: write\n"
@@ -84,7 +72,6 @@ def test_outside_action_moves_into_a_job_whose_token_can_write():
     assert any(f.level == "high" and "release" in f.message for f in findings)
 
 
-@known_gap
 def test_leaving_a_job_is_reported_even_when_the_power_stays_elsewhere():
     old = (
         HEAD

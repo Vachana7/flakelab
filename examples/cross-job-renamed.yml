@@ -1,0 +1,14 @@
+on: push
+permissions:
+  contents: read
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    env:
+      KEY: ${{ secrets.DEPLOY_KEY }}
+    steps:
+      - run: make build
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl https://stats.example.org/ping

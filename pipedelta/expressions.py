@@ -213,12 +213,22 @@ def _only_compared(
     return after in _COMPARISON_CHARS or (after == "!" and after2 == "=")
 
 
-def has_untrusted_value(text: str) -> bool:
-    """Could any ``${{ ... }}`` in this text paste outsider-controlled text into it?"""
+def pasted_references(text: str) -> list[Path]:
+    """References in the ``${{ ... }}`` of this text whose value can end up in it.
+
+    A reference that is only compared (see ``_only_compared``) is left out,
+    because it can contribute nothing but true or false.
+    """
+    found: list[Path] = []
     for body in bodies(text):
         tokens = _tokens(body)
         enclosing = _enclosing_functions(tokens)
         for path, start, end in _find(tokens):
-            if is_untrusted(path) and not _only_compared(tokens, start, end, enclosing[start]):
-                return True
-    return False
+            if not _only_compared(tokens, start, end, enclosing[start]):
+                found.append(path)
+    return found
+
+
+def has_untrusted_value(text: str) -> bool:
+    """Could any ``${{ ... }}`` in this text paste outsider-controlled text into it?"""
+    return any(is_untrusted(path) for path in pasted_references(text))

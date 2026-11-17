@@ -26,6 +26,7 @@ from .permissions import (
 from .powers import (
     BUILT_IN_TOKEN,
     FIRST_PARTY,
+    INJECTION_FROM_JOB,
     RISKY_TRIGGERS,
     Power,
     action_name,
@@ -96,6 +97,15 @@ def _explain(power: Power, after: set[Power]) -> Finding:
 
     if kind == "network":
         return Finding("medium", power, f"In {place}, a command now contacts {name}.")
+
+    if kind == "injection" and name == INJECTION_FROM_JOB:
+        return Finding(
+            "high",
+            power,
+            f"In {place}, a command pastes in an output of another job, and that output "
+            "can hold text written by an outsider (such as a pull request title), so "
+            "they can run their own commands here.",
+        )
 
     if kind == "injection":
         return Finding(
@@ -269,6 +279,8 @@ def _removal_sentence(kind: str, name: str) -> str:
         return f"No command contacts {name} any more."
     if kind == "runner":
         return "No longer runs on the project's own machine."
+    if kind == "injection" and name == INJECTION_FROM_JOB:
+        return "No longer pastes another job's outsider-controlled output into a shell command."
     if kind == "injection":
         return "No longer pastes outsider-controlled text into a shell command."
     if kind == "hidden":

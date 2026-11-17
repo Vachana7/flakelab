@@ -14,6 +14,7 @@ from typing import Any
 import yaml
 
 from . import expressions
+from .links import JobLinks
 from .text import clean
 
 # http://host or https://host inside a shell command
@@ -105,6 +106,10 @@ def _strings(node: Any) -> list[str]:
 
 
 INJECTION = "outsider-controlled text used in a shell command"
+# The same danger arriving from another job: the text was published as a job
+# output and is pasted into a command here. The name holds no job or output
+# name, so renaming a job does not make it look like a new power.
+INJECTION_FROM_JOB = "outsider-controlled text from another job's output used in a shell command"
 ALL_SECRETS = expressions.ALL_SECRETS  # kept under this name for existing imports
 
 
@@ -138,6 +143,8 @@ def extract_powers(text: str) -> set[Power]:
     for s in _strings(doc.get("env")):
         for name in _secret_names(s):
             powers.add(Power("secret", name, "workflow"))
+
+    links = JobLinks(jobs)
 
     for job_name, job in jobs.items():
         if not isinstance(job, dict):
@@ -182,6 +189,8 @@ def extract_powers(text: str) -> set[Power]:
                     powers.add(Power("hidden", "decodes hidden text and runs it", where))
                 if expressions.has_untrusted_value(run):
                     powers.add(Power("injection", INJECTION, where))
+                if links.pastes_outsider_output(run, str(job_name)):
+                    powers.add(Power("injection", INJECTION_FROM_JOB, where))
             # The same substitution happens in the script of a github-script
             # step, where the pasted text becomes JavaScript.
             script = (
@@ -191,9 +200,11 @@ def extract_powers(text: str) -> set[Power]:
                 isinstance(uses, str)
                 and action_name(uses) == "actions/github-script"
                 and isinstance(script, str)
-                and expressions.has_untrusted_value(script)
             ):
-                powers.add(Power("injection", INJECTION, where))
+                if expressions.has_untrusted_value(script):
+                    powers.add(Power("injection", INJECTION, where))
+                if links.pastes_outsider_output(script, str(job_name)):
+                    powers.add(Power("injection", INJECTION_FROM_JOB, where))
     return powers
 
 

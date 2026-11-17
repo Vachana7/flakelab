@@ -33,6 +33,8 @@ every round are kept in `evaluation/results/`:
   of a host (`https://user:token@host/`) for the host. That made one address
   visible that was not read before and raised one more commit from medium to
   high: 159. Nobody has judged whether those ten alerts were wanted.
+  Following outsider text through job outputs was added afterwards; it changed
+  no result in either test, so there is no separate result file for it.
 
 Version 0.2 was written **after** looking at the version 0.1 results. Two of its
 rules (hidden decoded commands, and `toJSON(secrets)`) were added because cases 03

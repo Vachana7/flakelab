@@ -1,8 +1,9 @@
 # Powers that move between jobs
 
 Status: **same-job combinations implemented** in version 0.5 (17 Nov 2026,
-`pipedelta/jobs.py` and `pipedelta/paths.py`). Data passed from one job to
-another is still not followed.
+`pipedelta/jobs.py` and `pipedelta/paths.py`). Of the ways data passes from
+one job to another, only job outputs carrying outsider text are followed
+(`pipedelta/links.py`).
 
 ## The problem
 
@@ -41,10 +42,60 @@ test bodies were not changed. Three control tests in the same file (rename,
 move between equally exposed jobs, copy into an equally exposed job) still
 pass. `tests/test_paths.py` has the tests for the new modules.
 
+## Values passed between jobs (job outputs)
+
+Added on 17 Nov 2026 in `pipedelta/links.py`. Jobs run on separate machines.
+The one hand-over this tool follows is a job output: job `a` publishes
+`outputs: title: ...`, job `b` lists `needs: a` and reads
+`needs.a.outputs.title`.
+
+What is reported: outsider-controlled text that is published as an output and
+pasted into a command (a `run:` script or a github-script `script:`) in a job
+that needs it. That job then counts as pasting outsider text into a command,
+so the same-job pairings above apply to it (beside a secret, beside a write
+token). A change in job `a` can therefore raise a finding in job `b` that
+nobody edited. Examples: `examples/outputs-before.yml`, `outputs-attack.yml`,
+`outputs-safe.yml`.
+
+An output is said to carry outsider text only when the file shows it:
+
+1. its value names an outsider-controlled field directly;
+2. its value is the output of a `run` step in the same job, and that step has
+   outsider text in its command or in its own `env`;
+3. its value is an output of another needed job that carries outsider text.
+
+What is deliberately not assumed (each has a test in `tests/test_links.py`):
+
+- `needs` alone passes nothing.
+- A job reads only the outputs of jobs it lists under `needs` itself.
+- An output the publishing job does not define is empty.
+- GitHub withholds an output whose value contains a secret, so a secret is
+  never said to arrive in the reading job through an output.
+- An output filled by an action, a file or the network is left alone, because
+  the workflow file does not show what is in it.
+- Reading the output through an environment variable, or only comparing it,
+  is not reported.
+
+Limits of this part:
+
+- Rule 2 is a guess in one direction: a step that handles outsider text and
+  sets an output is assumed to put that text in the output. It may not.
+- A secret that a step alters (for example encodes) before writing it to an
+  output is not withheld by GitHub and is not seen by PipeDelta.
+- Outsider text in a job-level or workflow-level `env` that a step copies to
+  an output is not seen.
+- Artifacts, caches and outputs of reusable workflows are not followed.
+
+Evidence: 22 tests. On the evaluation it changed nothing: the attack cases
+and all 1,659 history commits give identical results. In the latest workflow
+files of the eight projects, 10 of 68 read a job output and none pastes one
+into a command. So this feature is tested but has not been seen firing on
+real history.
+
 ## What it still does not do
 
-**Do not claim that PipeDelta follows data between jobs.** It only looks at
-what one job holds.
+**Do not claim that PipeDelta follows data between jobs in general.** It
+looks at what one job holds, plus outsider text arriving through a job output.
 
 - A pairing is new only if it existed in no job. If a secret sat beside an
   address in job A and beside an injection in job C, moving it into job B
@@ -58,8 +109,8 @@ what one job holds.
   code, which is not detected.
 - Pairings that are not in the table are not seen.
 - `if:` conditions: two jobs with the same facts and different guards look the same.
-- Values passed between jobs through outputs, artifacts or caches, and
-  anything in another file.
+- Values passed between jobs through artifacts or caches, secrets passed
+  through outputs in altered form, and anything in another file.
 - It says what the file makes possible. It does not show that a secret is
   actually sent anywhere.
 

@@ -138,14 +138,14 @@ function barRows(items, colorOf) {
 }
 function trendChart(points) {
   if (points.length < 2) return h("div", { class: "empty" }, h("h3", {}, "Not enough runs yet"), "The trend appears after two analyses.");
-  const W = 560, H = 150, P = 22, n = points.length;
+  const W = 560, H = 170, P = 30, n = points.length;
   const max = Math.max(1, ...points.map((p) => p.high + p.medium + p.low));
-  const x = (i) => P + (i * (W - 2 * P)) / (n - 1), y = (v) => H - P - (v / max) * (H - 2 * P);
-  const line = (key, color) => `<polyline fill="none" stroke="${color}" stroke-width="2" points="${points.map((p, i) => `${x(i)},${y(p[key])}`).join(" ")}"/>`;
-  const dots = points.map((p, i) => `<circle cx="${x(i)}" cy="${y(p.high)}" r="3.5" fill="var(--high)" stroke="var(--panel)" stroke-width="2"><title>${p.title.replace(/[<&>]/g, "")}: ${p.high} high, ${p.medium} medium, ${p.low} low</title></circle>`).join("");
-  const grid = [0, 0.5, 1].map((f) => `<line x1="${P}" x2="${W - P}" y1="${y(max * f)}" y2="${y(max * f)}" stroke="var(--line)"/><text x="2" y="${y(max * f) + 4}" fill="var(--faint)" font-size="10">${Math.round(max * f)}</text>`).join("");
+  const x = (i) => P + (i * (W - P - 14)) / (n - 1), y = (v) => H - 20 - (v / max) * (H - 40);
+  const line = (key, color) => points.some((p) => p[key]) ? `<polyline fill="none" stroke="${color}" stroke-width="2.5" points="${points.map((p, i) => `${x(i)},${y(p[key])}`).join(" ")}"/>` : "";
+  const dots = points.map((p, i) => `<circle cx="${x(i)}" cy="${y(p.high)}" r="4" fill="var(--high)" stroke="var(--panel)" stroke-width="2"><title>${p.title.replace(/[<&>]/g, "")}: ${p.high} high, ${p.medium} medium, ${p.low} low</title></circle>`).join("");
+  const grid = [0, 0.5, 1].map((f) => `<line x1="${P}" x2="${W - 14}" y1="${y(max * f)}" y2="${y(max * f)}" stroke="var(--line)"/><text x="${P - 8}" y="${y(max * f) + 5}" text-anchor="end" fill="var(--faint)" font-size="13">${Math.round(max * f)}</text>`).join("");
   return h("div", { class: "chart" }, svg(`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Findings per analysis, oldest to newest">${grid}${line("medium", "var(--med)")}${line("high", "var(--high)")}${dots}</svg>`),
-    h("div", { class: "meta", style: "margin-top:6px" }, h("span", {}, h("span", { class: "dot", style: "background:var(--high)" }), "High"), h("span", {}, h("span", { class: "dot", style: "background:var(--med)" }), "Medium"), h("span", { class: "faint" }, `last ${n} analyses, oldest first`)));
+    h("div", { class: "meta", style: "margin-top:6px" }, h("span", {}, h("span", { class: "dot", style: "background:var(--high)" }), "High"), points.some((p) => p.medium) ? h("span", {}, h("span", { class: "dot", style: "background:var(--med)" }), "Medium") : null, h("span", { class: "faint" }, `last ${n} analyses, oldest first`)));
 }
 
 /* ---------- views ---------- */
@@ -389,7 +389,10 @@ async function analysis(id) {
     const byId = Object.fromEntries(file.findings.map((f) => [f.id, f]));
     return h("div", {}, file.structure.jobs.map((j) => {
       const facts = [];
-      if (j.token?.known) facts.push(h("span", { class: "fact" + (j.write_scopes.length ? " hot" : "") }, `token: ${j.token.default || "per scope"}${j.write_scopes.length ? ` · write ${j.write_scopes.join(", ")}` : ""}`));
+      if (j.token?.known) {
+        const base = j.token.default && j.token.default !== "none" ? `token: ${j.token.default}` : "token: no default access";
+        facts.push(h("span", { class: "fact" + (j.write_scopes.length ? " hot" : "") }, j.write_scopes.length ? `${base} · can write ${j.write_scopes.join(", ")}` : base));
+      }
       else if (j.token) facts.push(h("span", { class: "fact" }, "token: repository default"));
       j.secrets.forEach((s) => facts.push(h("span", { class: "fact hot" }, `secret ${s}`)));
       j.hosts.forEach((s) => facts.push(h("span", { class: "fact" }, `address ${s}`)));
@@ -498,5 +501,6 @@ function route() {
 }
 window.addEventListener("hashchange", route);
 $("#menu").addEventListener("click", () => $("#side").classList.toggle("open"));
+$("#session").replaceChildren(h("div", { class: "faint" }, "Checking GitHub…"));
 loadSession();
 route();

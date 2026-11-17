@@ -65,6 +65,7 @@ answers on localhost. See `docs/PLATFORM.md` for the architecture.
 
 ## Documents
 
+- `docs/FEATURES_GUIDE.md`, `docs/EXPO_PRESENTATION.md`, `docs/PROJECT_REPORT.md`: feature guide, presenting to experts, project report
 - `docs/SETUP.md`: set up and run on Windows, token, troubleshooting, expo quick start
 - `docs/PLATFORM.md`: the web app, API, security choices, expo walk-through
 - `docs/EVIDENCE.md`: what each finding records

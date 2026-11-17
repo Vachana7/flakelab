@@ -21,11 +21,10 @@ What these tests insist on NOT being assumed:
 * reading the output through ``env:`` is the safe way and is not reported.
 """
 
-from pipedelta.stepflows import flows_in
-
 from pipedelta.delta import compare, overall
 from pipedelta.paths import paths_in
 from pipedelta.powers import extract_powers
+from pipedelta.stepflows import flows_in
 
 TOP = "on: pull_request\npermissions:\n  contents: read\njobs:\n  a:\n    runs-on: ubuntu-latest\n"
 
@@ -222,6 +221,53 @@ def test_a_name_that_only_looks_similar_is_not_the_output():
         "      - id: read\n"
         "        env:\n          TITLE: ${{ github.event.pull_request.title }}\n"
         '        run: echo "title_long=$TITLE" >> "$GITHUB_OUTPUT"\n'
+    )
+    assert from_step(job(source, SINK)) == set()
+
+
+def test_only_the_output_whose_line_carries_outsider_text_is_accused():
+    """One step writes two outputs; one from the title, one from a safe value."""
+    source = (
+        "      - id: read\n"
+        "        env:\n          TITLE: ${{ github.event.pull_request.title }}\n"
+        "          SAFE: ${{ github.sha }}\n"
+        "        run: |\n"
+        '          echo "title=$TITLE" >> "$GITHUB_OUTPUT"\n'
+        '          echo "sha=$SAFE" >> "$GITHUB_OUTPUT"\n'
+    )
+    safe_sink = '      - run: echo "${{ steps.read.outputs.sha }}"\n'
+    bad_sink = '      - run: echo "${{ steps.read.outputs.title }}"\n'
+    assert from_step(job(source, safe_sink)) == set()
+    assert from_step(job(source, bad_sink)) == {"a"}
+
+
+def test_outsider_text_copied_to_a_shell_variable_first_is_still_followed():
+    source = (
+        "      - id: read\n"
+        "        env:\n          TITLE: ${{ github.event.pull_request.title }}\n"
+        "        run: |\n"
+        '          T="$TITLE"\n'
+        '          echo "title=$T" >> "$GITHUB_OUTPUT"\n'
+    )
+    assert from_step(job(source, SINK)) == {"a"}
+
+
+def test_a_value_from_a_command_is_unknown_and_not_accused():
+    """``$(git rev-parse HEAD)`` is not shown by the file to hold outsider text."""
+    source = (
+        "      - id: read\n"
+        "        env:\n          TITLE: ${{ github.event.pull_request.title }}\n"
+        '        run: echo "title=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"\n'
+    )
+    assert from_step(job(source, SINK)) == set()
+
+
+def test_a_shell_variable_with_the_same_name_as_the_output_is_not_the_output():
+    """``$TITLE`` is read but nothing is written to an output called title."""
+    source = (
+        "      - id: read\n"
+        "        env:\n          TITLE: ${{ github.event.pull_request.title }}\n"
+        '        run: echo "other=$TITLE" >> "$GITHUB_OUTPUT"\n'
     )
     assert from_step(job(source, SINK)) == set()
 

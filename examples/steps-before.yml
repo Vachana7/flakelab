@@ -1,0 +1,14 @@
+# One job, two steps. Step "read" writes the pull request title to an output.
+# Here the output is the commit id, which an outsider cannot choose.
+on: pull_request
+permissions:
+  contents: read
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    env:
+      CHAT_TOKEN: ${{ secrets.CHAT_TOKEN }}
+    steps:
+      - id: read
+        run: echo "title=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+      - run: ./notify.sh "${{ steps.read.outputs.title }}"

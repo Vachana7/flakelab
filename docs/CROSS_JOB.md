@@ -92,6 +92,53 @@ files of the eight projects, 10 of 68 read a job output and none pastes one
 into a command. So this feature is tested but has not been seen firing on
 real history.
 
+## Values passed between steps of one job (step outputs)
+
+Added on 17 Nov 2026 in `pipedelta/stepflows.py`, as a separate commit after
+the job-output work. It is the same idea inside one job: step `read` (with an
+`id`) writes `title=...` to `$GITHUB_OUTPUT`, and a LATER step pastes
+`steps.read.outputs.title` into a command. Examples:
+`examples/steps-before.yml`, `steps-attack.yml`, `steps-safe.yml`.
+
+A flow is reported only when the file shows every link:
+
+1. the later step pastes the output into a `run` script or a github-script
+   `script` (comparing it, or reading it through `env`, is not reported);
+2. the source step is earlier in the same job;
+3. the source step is a `run` step that writes to `$GITHUB_OUTPUT` or uses
+   `::set-output`;
+4. the line that writes THAT output carries outsider text: an outsider field
+   pasted directly, a shell variable that the step's `env` (or an earlier
+   line) filled with one, or an output that itself carries outsider text.
+
+A step with several outputs is judged output by output. A value that comes
+from a command, a file or an outside action is unknown and not accused.
+
+The report gives the evidence: which step takes which field, which output it
+sets, and which later step pastes it. A flow raises the same finding as any
+other outsider text in a command, so the same-job pairings apply (beside a
+secret, beside a write token).
+
+Limits of this part (each is a documented miss, not tested as detected):
+
+- Outsider text that reaches a step only through a job-level or
+  workflow-level `env`.
+- An output name built at run time, or a script that builds the whole
+  `name=value` text in one variable.
+- For the multi-line form (`name<<EOF`) the output is accused if the step
+  handles outsider text anywhere, which can over-report.
+- If the workflow already has the same flow in one job, a copy in a second job
+  is rated low ("already present"). This is the existing rule for every kind
+  of injection, not specific to steps.
+- Job outputs (above) use a coarser rule: a `run` step that handles outsider
+  text and is named by the job output is assumed to put it there.
+
+Evidence: 34 tests. On the evaluation it changed nothing: the attack cases
+and all 1,659 history commits give identical results. In the latest workflow
+files of the eight projects, 23 of 68 read a step output and none carries
+outsider text into a command, so this feature has not been seen firing on
+real history.
+
 ## What it still does not do
 
 **Do not claim that PipeDelta follows data between jobs in general.** It

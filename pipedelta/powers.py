@@ -15,6 +15,7 @@ import yaml
 
 from . import expressions
 from .links import JobLinks
+from .stepflows import step_flows
 from .text import clean
 
 # http://host or https://host inside a shell command
@@ -110,6 +111,10 @@ INJECTION = "outsider-controlled text used in a shell command"
 # output and is pasted into a command here. The name holds no job or output
 # name, so renaming a job does not make it look like a new power.
 INJECTION_FROM_JOB = "outsider-controlled text from another job's output used in a shell command"
+# And inside one job: a step put the text in an output, a later step pastes it.
+INJECTION_FROM_STEP = (
+    "outsider-controlled text from an earlier step's output used in a shell command"
+)
 ALL_SECRETS = expressions.ALL_SECRETS  # kept under this name for existing imports
 
 
@@ -174,6 +179,9 @@ def extract_powers(text: str) -> set[Power]:
         for s in _strings(job):
             for name in _secret_names(s):
                 powers.add(Power("secret", name, where))
+
+        if step_flows(where, job):
+            powers.add(Power("injection", INJECTION_FROM_STEP, where))
 
         for step in _as_list(job.get("steps")):
             if not isinstance(step, dict):

@@ -56,15 +56,15 @@ pipeline can use it to block the change.
 - **Only what one job holds is combined.** A new power is rated by what it
   sits next to in its own job (a secret beside an outside address, outsider
   text or unpinned outside code; outside code or outsider text beside a write
-  token). Between jobs, only one thing is followed: outsider-controlled text
-  published as a job output and pasted into a command by a job that needs
-  it. Artifacts, caches, and outputs filled by an action are not followed,
-  and a pairing counts as new only if no job had it before.
+  token). Outsider-controlled text is also followed when it is published as
+  a job output and pasted into a command by a job that needs it, or written
+  to a step output and pasted by a later step of the same job. Artifacts,
+  caches, and outputs filled by an action are not followed, and a pairing
+  counts as new only if no job had it before.
   `docs/CROSS_JOB.md` lists the cases this misses.
 - Secrets and outsider-controlled values are recognised inside `${{ }}` in
   dot and bracket form and in any capitalisation. Not recognised: a `}}`
-  inside a quoted string, values passed from one step to a later step of
-  the same job through step outputs, and `github.token` used in place of
+  inside a quoted string and `github.token` used in place of
   `secrets.GITHUB_TOKEN`.
 - An outsider-controlled value inside an expression in a command is reported
   as an injection unless it is only compared (`==`, `!=`, `<`, `>`) or sits

@@ -27,6 +27,7 @@ from .powers import (
     BUILT_IN_TOKEN,
     FIRST_PARTY,
     INJECTION_FROM_JOB,
+    INJECTION_FROM_STEP,
     RISKY_TRIGGERS,
     Power,
     action_name,
@@ -34,6 +35,7 @@ from .powers import (
     extract_powers,
     is_pinned,
 )
+from .stepflows import StepFlow, flows_in
 
 LEVELS = ["low", "medium", "high"]
 
@@ -97,6 +99,15 @@ def _explain(power: Power, after: set[Power]) -> Finding:
 
     if kind == "network":
         return Finding("medium", power, f"In {place}, a command now contacts {name}.")
+
+    if kind == "injection" and name == INJECTION_FROM_STEP:
+        return Finding(
+            "high",
+            power,
+            f"In {place}, a command pastes in an output of an earlier step, and that "
+            "output can hold text written by an outsider (such as a pull request "
+            "title), so they can run their own commands here.",
+        )
 
     if kind == "injection" and name == INJECTION_FROM_JOB:
         return Finding(
@@ -210,6 +221,35 @@ def _raise_for_new_paths(
     return out
 
 
+def _evidence(flow: StepFlow) -> str:
+    output = f"the output '{flow.output}'" if flow.output else "its outputs"
+    return (
+        f"step {flow.source_step!r} (step {flow.source_position}) takes {flow.origin} and sets "
+        f"{output}; step {flow.sink_position} pastes {flow.reference} into its command"
+    )
+
+
+def _add_step_evidence(findings: list[Finding], after_text: str | None) -> list[Finding]:
+    """Say, for a flow between steps, where the text comes from and where it lands."""
+    by_job: dict[str, list[StepFlow]] = {}
+    for flow in flows_in(after_text):
+        by_job.setdefault(flow.job, []).append(flow)
+    out: list[Finding] = []
+    for f in findings:
+        if (
+            f.change == "gained"
+            and f.power.kind == "injection"
+            and f.power.name == INJECTION_FROM_STEP
+        ):
+            flows = by_job.get(f.power.where, [])
+            if flows:
+                shown = "; ".join(_evidence(flow) for flow in flows[:3])
+                more = f" (and {len(flows) - 3} more)" if len(flows) > 3 else ""
+                f = replace(f, message=f"{f.message} Evidence: {shown}{more}.")
+        out.append(f)
+    return out
+
+
 def _already_had(power: Power, before: set[Power]) -> Finding | None:
     """Handle powers the workflow already had in some form before the change.
 
@@ -281,6 +321,8 @@ def _removal_sentence(kind: str, name: str) -> str:
         return "No longer runs on the project's own machine."
     if kind == "injection" and name == INJECTION_FROM_JOB:
         return "No longer pastes another job's outsider-controlled output into a shell command."
+    if kind == "injection" and name == INJECTION_FROM_STEP:
+        return "No longer pastes an earlier step's outsider-controlled output into a shell command."
     if kind == "injection":
         return "No longer pastes outsider-controlled text into a shell command."
     if kind == "hidden":
@@ -489,6 +531,7 @@ def compare(before_text: str | None, after_text: str | None) -> list[Finding]:
     findings = _raise_for_new_paths(
         findings, gained, new_paths(before_text, after_text), job_facts(before_text)
     )
+    findings = _add_step_evidence(findings, after_text)
     jobs_after = set(job_tokens(yaml.safe_load(after_text))) if after_text else set()
     findings += _removal_findings(before, after, jobs_after)
     findings += _permission_findings(before_text, after_text)

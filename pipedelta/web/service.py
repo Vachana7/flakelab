@@ -167,7 +167,7 @@ def diff_rows(
             (on_old if e["side"] == "before" else on_new).setdefault(e["line"], []).append(e["id"])
 
     def cell(lines: list[str], n: int, marks: dict[int, list[str]]) -> dict[str, Any]:
-        return {"n": n + 1, "text": clean_text(lines[n], 400), "findings": marks.get(n + 1, [])}
+        return {"n": n + 1, "text": CONTROL_RE.sub("", lines[n]).rstrip()[:400], "findings": marks.get(n + 1, [])}
 
     rows: list[dict[str, Any]] = []
     matcher = difflib.SequenceMatcher(None, old, new, autojunk=False)

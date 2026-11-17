@@ -1,0 +1,23 @@
+# THROWAWAY - never merge. Checks how GitHub itself treats capital letters
+# and bracket syntax in expressions, so PipeDelta's assumption is tested.
+name: Case check
+on: pull_request
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Context names written in other capitalisation
+        run: |
+          echo "event=${{ GitHub.Event_Name }}"
+          test "${{ GitHub.Event_Name }}" = "pull_request"
+          test "${{ GITHUB.SHA }}" = "${{ github.sha }}"
+      - name: Secret through an upper-case context and through brackets
+        env:
+          A: ${{ SECRETS.GITHUB_TOKEN != '' }}
+          B: ${{ secrets['github_token'] != '' }}
+        run: |
+          echo "A=$A B=$B"
+          test "$A" = "true"
+          test "$B" = "true"

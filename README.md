@@ -42,6 +42,9 @@ repositories) pushed malicious workflows **straight to the default branch** with
 stolen tokens, so pull-request checks never ran. Since 0.5, PipeDelta reviews pushes
 too.
 
+Website: `site/index.html` (published to GitHub Pages by `.github/workflows/pages.yml`,
+with the evaluation dashboard at `/dashboard/`).
+
 ## New in 0.5
 
 - **Push review.** The same action runs on `push`: a workflow pushed straight to

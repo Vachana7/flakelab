@@ -1,9 +1,18 @@
 name: PipeDelta
 
-# Runs PipeDelta on this repository's own pull requests.
+# Runs PipeDelta on this repository's own pull requests, and on every push to
+# main, so a workflow pushed straight to main (as in GhostAction and wfx-loot)
+# is reviewed too.
 # "pull_request" (not "pull_request_target") is used on purpose: a pull request
 # from a stranger then gets a read-only token and no secrets.
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/**"
+      - ".pipedelta.yml"
+      - "**/action.yml"
+      - "**/action.yaml"
   pull_request:
     paths:
       - ".github/**"
@@ -20,6 +29,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      security-events: write   # upload the SARIF report to the Security tab
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -29,3 +39,12 @@ jobs:
         with:
           fail-on: high
           token: ${{ github.token }}
+          sarif-file: pipedelta.sarif
+      - name: Show the findings in the Security tab
+        if: always() && hashFiles('pipedelta.sarif') != ''
+        # Pull requests from forks get a read-only token, so the upload may be refused.
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          sarif_file: pipedelta.sarif
+          category: pipedelta

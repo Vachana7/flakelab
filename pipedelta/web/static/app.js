@@ -157,11 +157,19 @@ async function overview() {
   const head = h("div", { class: "page-head" }, h("div", {}, h("h1", {}, "Overview"),
     h("p", {}, "What changed in your GitHub Actions workflows, and what each change lets an attacker do that they could not do before.")));
   if (!stats.analyses) {
-    return mount(head, h("div", { class: "card empty" }, h("h3", {}, "No analyses yet"),
-      "Connect a repository, or try one of the built-in examples. Everything here is computed from analyses you run.",
-      h("div", { class: "chips", style: "justify-content:center;margin-top:16px" },
-        h("a", { class: "btn primary", href: "#/analyze" }, "Analyze a workflow"),
-        h("a", { class: "btn", href: "#/analyze?tab=samples" }, "Try an example"))));
+    const demo = h("button", { class: "btn primary", type: "button", onclick: () => loadDemo(demo) }, "Load demo data");
+    return mount(head, h("div", { class: "card empty welcome" },
+      h("div", {},
+        h("h3", {}, "No analyses yet"),
+        h("p", {}, "Load the built-in examples to see a filled dashboard in one click, or analyze a real repository. Everything here is computed from analyses you run, on this machine."),
+        h("div", { class: "chips", style: "margin-top:20px" },
+          demo,
+          h("a", { class: "btn", href: "#/analyze" }, "Analyze a workflow"),
+          h("a", { class: "btn ghost", href: "#/analyze?tab=samples" }, "Pick one example"))),
+      h("ol", { class: "welcome-steps" },
+        h("li", {}, h("span", { class: "num" }, "1"), h("div", {}, h("b", {}, "Pick a change"), "A GitHub repository, a pasted workflow, or an example.")),
+        h("li", {}, h("span", { class: "num" }, "2"), h("div", {}, h("b", {}, "See what it gained"), "Secrets, addresses, permissions and outside code that are new.")),
+        h("li", {}, h("span", { class: "num" }, "3"), h("div", {}, h("b", {}, "Fix before merging"), "Each finding shows the line, the evidence and a fix.")))));
   }
   const stat = (n, l, tone) => h("div", { class: "card stat" }, h("div", { class: "n", style: tone ? `color:var(--${tone})` : "" }, n), h("div", { class: "l" }, l));
   const f = stats.findings;
@@ -181,6 +189,20 @@ async function overview() {
         h("div", { class: "list" }, recent.analyses.map(analysisRow))),
       h("div", { class: "card" }, h("div", { class: "sec-title" }, h("h2", {}, "What kinds of power appeared")),
         Object.keys(stats.kinds).length ? barRows(Object.entries(stats.kinds).map(([k, v]) => [kindName(k), v, "var(--accent)"])) : h("div", { class: "empty" }, "Nothing new has been gained yet."))));
+}
+
+/* Fill an empty database with every built-in example, for demos. */
+async function loadDemo(btn) {
+  btn.disabled = true; btn.textContent = "Loading examples…";
+  try {
+    const { samples } = await api("/samples");
+    for (const s of samples) await api("/analyses", { method: "POST", body: { mode: "sample", sample: s.id } });
+    toast(`Loaded ${samples.length} example analyses`);
+    overview();
+  } catch (e) {
+    btn.disabled = false; btn.textContent = "Load demo data";
+    toast(e.message || "Could not load the examples", true);
+  }
 }
 
 function analysisRow(a) {

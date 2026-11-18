@@ -78,7 +78,7 @@ def test_markdown_report_has_marker_and_table():
 
     text = render_markdown({"ci.yml": compare(BEFORE, ATTACK)})
     assert text.startswith(MARKER)
-    assert "| high |" in text
+    assert "high |" in text
     assert "5 new power(s)" in text
 
 

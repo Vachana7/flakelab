@@ -8,8 +8,11 @@ inputs:
     description: Fail the check when a new power is at or above this level (low, medium, high, never)
     default: high
   token:
-    description: Token used to post the report as a pull request comment. Leave empty for no comment.
+    description: Token used to post the report as a pull request comment and to look up commit ids for pin suggestions. Leave empty for no comment.
     default: ""
+  zizmor:
+    description: Also run zizmor on the old and new files and report its new findings in plain words (on, off)
+    default: "off"
 outputs:
   level:
     description: Highest level among the new powers (none, low, medium, high)
@@ -22,5 +25,7 @@ runs:
     - action
     - --fail-on
     - ${{ inputs.fail-on }}
+    - --zizmor
+    - ${{ inputs.zizmor }}
   env:
     PIPEDELTA_TOKEN: ${{ inputs.token }}

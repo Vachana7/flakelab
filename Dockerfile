@@ -11,7 +11,9 @@ RUN apt-get update \
 WORKDIR /opt/pipedelta
 COPY pyproject.toml README.md ./
 COPY pipedelta ./pipedelta
-RUN pip install --no-cache-dir .
+# zizmor is the optional second opinion (--zizmor on). Its version is fixed so
+# results do not change between runs.
+RUN pip install --no-cache-dir . zizmor==1.32.0
 
 # GitHub mounts the repository with a different owner than the container
 # user, and git refuses to read it unless the folder is marked as safe.

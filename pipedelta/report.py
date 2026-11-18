@@ -30,6 +30,8 @@ def render_text(results: Results) -> str:
         lines.append(path)
         for f in findings:
             lines.append(f"  [{f.level.upper():6}] {f.message}")
+            if f.fix and f.level != "low":
+                lines.append(f"           fix: {f.fix}")
         lines.append("")
     return "\n".join(lines)
 
@@ -46,6 +48,53 @@ def _cell(text: str) -> str:
         text = text.replace(char, "\\" + char)
     text = text.replace("@", "@\u200b")
     return text.replace("://", ":\u200b//")
+
+
+_BADGES = {"high": "🔴 high", "medium": "🟠 medium", "low": "⚪ low"}
+
+
+def _badge(level: str) -> str:
+    return _BADGES.get(level, level)
+
+
+def _code_cell(text: str) -> str:
+    """A fix suggestion: plain words escaped, `code` kept as code."""
+    parts = text.split("`")
+    out = []
+    for i, part in enumerate(parts):
+        if i % 2:  # inside backticks: only keep it on one line and out of the table
+            out.append("`" + part.replace("|", "\\|").replace("\n", " ").replace("`", "'") + "`")
+        else:
+            out.append(_cell(part))
+    return "".join(out)
+
+
+def render_json(results: Results) -> str:
+    """Machine-readable output, for dashboards and other tools."""
+    import json
+
+    everything = all_findings(results)
+    return json.dumps(
+        {
+            "level": overall(everything),
+            "count": len(everything),
+            "files": {
+                path: [
+                    {
+                        "level": f.level,
+                        "kind": f.power.kind,
+                        "name": f.power.name,
+                        "job": f.power.where,
+                        "message": f.message,
+                        "fix": f.fix,
+                    }
+                    for f in findings
+                ]
+                for path, findings in results.items()
+            },
+        },
+        indent=2,
+    )
 
 
 def render_markdown(results: Results) -> str:
@@ -65,14 +114,22 @@ def render_markdown(results: Results) -> str:
         if not findings:
             continue
         safe_path = path.replace("`", "'").replace("\n", " ")
-        lines += ["", f"### `{safe_path}`", "", "| Level | New power |", "|---|---|"]
+        lines += [
+            "",
+            f"### `{safe_path}`",
+            "",
+            "| Level | New power | How to fix |",
+            "|---|---|---|",
+        ]
         for f in findings:
-            lines.append(f"| {f.level} | {_cell(f.message)} |")
+            fix = _code_cell(f.fix) if f.fix and f.level != "low" else ""
+            lines.append(f"| {_badge(f.level)} | {_cell(f.message)} | {fix} |")
     lines += [
         "",
         (
-            "PipeDelta reads workflow files only. It does not inspect the outside "
-            "actions or scripts a workflow calls. A person should still review this change."
+            "PipeDelta reads workflow files and the actions stored in this repository. "
+            "It does not inspect outside actions or the scripts a step runs. "
+            "A person should still review this change."
         ),
     ]
     return "\n".join(lines) + "\n"

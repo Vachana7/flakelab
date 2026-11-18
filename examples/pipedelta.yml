@@ -1,0 +1,9 @@
+# Example trust list. Copy to .pipedelta.yml at the top of your repository.
+# PipeDelta reads it from the target branch, never from the pull request, so a
+# pull request cannot trust its own additions; adding entries is itself reported.
+trusted-actions:
+  - docker/*                      # every action published by Docker
+  - pypa/gh-action-pypi-publish
+trusted-hosts:
+  - pypi.org                      # also covers upload.pypi.org
+  - codecov.io

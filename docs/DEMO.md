@@ -1,7 +1,8 @@
 # Expo demo script
 
-Total time: about 4 minutes. You need a browser logged in to GitHub. The
-offline version at the bottom needs only a laptop with Docker.
+Expo date: **20 November 2026**. The main demo takes about 5 minutes and needs
+**no internet and no GitHub token**. All commands are Windows PowerShell and
+are run in the project folder (replace the path if yours differs).
 
 Say the one-line idea first:
 
@@ -9,21 +10,116 @@ Say the one-line idea first:
 > new powers the pipeline just gained, in plain words, before the change is
 > accepted."
 
-## Main demo: the web app (about 4 minutes)
+---
 
-This is the product version of the three scenes below. Start it with
-`pip install -e .` then `pipedelta serve`, and open http://127.0.0.1:8765.
-The full walk-through, the API and the security choices are in
-`docs/PLATFORM.md`. In short: connect `Vachana7/pipedelta`, run a pull request,
-open a finding to show its line and before/after values, show Compare and
-Jobs and steps, run the "Outsider text passed between steps" example, download
-the SARIF report, then show History and Overview. Every number on those pages
-is computed from the analyses you ran; none is typed in.
+## 0. Setup the day before (needs internet, once)
 
-The scenes below use the command line and Docker and remain the offline
-fallback.
+```powershell
+cd $HOME\Documents\pipedelta
+git checkout platform
+git pull
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -e .
+pipedelta --help
+```
 
-## Scene 1: an ordinary change passes (about 1 minute)
+Expected: `pipedelta --help` prints `usage: pipedelta [-h] {diff,git,action,serve} ...`.
+If `Activate.ps1` is blocked, see problem 3 below.
+
+Then run section 1 once with Wi-Fi switched off. If it works, it will work at the expo.
+
+## 1. Start PipeDelta (do this 5 minutes before)
+
+```powershell
+cd $HOME\Documents\pipedelta
+.\.venv\Scripts\Activate.ps1
+Remove-Item Env:PIPEDELTA_GITHUB_TOKEN, Env:GITHUB_TOKEN, Env:GH_TOKEN -ErrorAction SilentlyContinue
+Remove-Item demo.db -ErrorAction SilentlyContinue
+pipedelta serve --db demo.db
+```
+
+Expected in the terminal: `PipeDelta 0.5.0 is running at http://127.0.0.1:8765`, then a line starting `GitHub token: not set`. If it says `set`, close this window, open a new one and repeat; the offline demo should run without a token. Leave this window open.
+Open **http://127.0.0.1:8765** in Chrome. The left menu shows Overview, Analyze,
+History, Repositories. Overview shows zeros because `demo.db` is new.
+
+The two `Remove-Item` lines make sure no token is set and the history is clean.
+**The offline demo never uses a token. Do not type or paste a token during the expo.**
+
+## 2. The demonstration
+
+Click **Analyze**, then the **Examples** tab. Every example is analysed by the
+real engine, with no internet.
+
+| Step | What you click | Expected result |
+|---|---|---|
+| 1. Safe workflow | **An ordinary change** | **Low risk**, "Gate: pass", 1 finding (`actions/setup-python`, new in the file), 0 attack paths |
+| 2. Malicious change | Go back, **A pull request adds a deploy job** | **High risk**, gauge **5**, "The GitHub Action would fail this change." |
+| 3. Security findings | **Findings** tab | 5 findings, all High: unpinned action `some-stranger/format-helper`, contacts `collector.example.invalid`, token can change contents, reads secret `DEPLOY_TOKEN`, runs on `pull_request_target` |
+| 4. Attack paths | **Attack paths** tab | 3 diagrams, each "Outside address" or "Unpinned outside code", then "Same job", then "Secret" or "Token that can write". Each shows "Made possible by this change" |
+| 5. Finding details | **Findings** tab, click the first row | A side panel opens: High, Unpinned action, Written in file, line 11 |
+| 6. Evidence and remediation | In the panel | Highlighted code on line 11, "Why it matters", and "What to do: replace the version tag with the full 40-character commit ID you reviewed" |
+| 7. Move between findings | `j` or Down arrow, `k` or Up arrow | The panel shows the next or previous finding ("Finding 2 of 5") |
+| 8. Show in diff | **Show in diff** in the panel | The Compare tab opens, the finding's line is highlighted |
+| 9. Copy as PR comment | Open a finding, click **Copy for a PR comment** | Button says "Copied". Paste into Notepad: it starts with `**High: Runs unpinned action ...**` followed by Where, Why it matters, What to do |
+| 10. Fixed workflow | **Analyze**, **Examples**, **The deploy job, fixed** | **Medium risk**, "Gate: pass", 1 finding (outside action, now locked to a commit), **No attack paths** |
+| 11. History | **History** then **Overview** | Three runs listed; Overview counts are computed from them |
+
+What to say at step 10: "The fix locked the outside action to a commit. The
+attack paths are gone and the gate passes. It is still Medium because it is
+still code from outside, so a person should still look. The tool does not claim
+the pipeline is perfectly safe."
+
+Other examples (optional): **Outsider text passed between jobs** and **Outsider
+text passed between steps** both give **High risk**. They show text that an
+outsider controls travelling through a job or step output into a command.
+
+## 3. Troubleshooting
+
+**1. `pipedelta` is not recognised.**
+The virtual environment is not active. Run `.\.venv\Scripts\Activate.ps1`; the prompt then starts with `(.venv)`. If it still fails, use `py -m pipedelta serve --db demo.db`.
+
+**2. `python` is not recognised.** Use `py` instead (the Windows launcher). That is why the commands above use `py`.
+
+**3. Activate.ps1 is blocked by "running scripts is disabled".** Allow it for this window only:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\.venv\Scripts\Activate.ps1
+```
+
+**4. "Address already in use" or the page does not load.** An old server is still running. Close the other PowerShell windows, or use another port:
+
+```powershell
+pipedelta serve --db demo.db --port 8766
+```
+
+and open `http://127.0.0.1:8766`. To see what holds port 8765: `Get-NetTCPConnection -LocalPort 8765`.
+
+**5. The browser shows "This site can't be reached".** The server window was closed or crashed. Start it again with section 1. Use `http://127.0.0.1:8765` (`localhost` also works). The laptop's network address or any other host name is refused on purpose.
+
+**6. An example does not open or the page looks broken.** Press Ctrl+Shift+R in Chrome to reload without cache. If it still fails, stop the server (Ctrl+C), delete `demo.db`, and start again.
+
+**7. "Copy for a PR comment" says "Copy failed".** Chrome only allows copying from `127.0.0.1` or `localhost`; check the address bar. If it still fails, say "it copies the finding as Markdown" and show the Markdown report instead: **Download report**, **Markdown**.
+
+**8. Everything fails.** Use the Docker fallback below, or open the HTML report you saved earlier. Before the expo, make one: in the app, open the malicious example, **Download report**, **HTML**, and keep the file on the Desktop. It is one file and needs no server.
+
+**9. No Wi-Fi.** Nothing in the main demo needs it. The page loads no fonts, scripts or images from the internet. Only the live GitHub scenes below need it.
+
+**Tokens.** Never put a GitHub token in a command, a document or a screenshot. If you ever typed one in this terminal, open the history file and delete that line, then revoke the token on GitHub:
+
+```powershell
+notepad (Get-PSReadLineOption).HistorySavePath
+```
+
+---
+
+## 4. Optional: live GitHub scenes (needs internet and a signed-in browser)
+
+You need a browser logged in to GitHub. Use this only if the internet is good;
+the offline demo above covers the same ideas.
+
+### Scene 1: an ordinary change passes (about 1 minute)
 
 1. Open the repository on GitHub. Open `.github/workflows/ci.yml` and click the pencil (edit).
 2. In the `matrix` line change `["3.10", "3.12"]` to `["3.10", "3.12", "3.13"]`.
@@ -32,7 +128,7 @@ fallback.
 
 Say: "Testing on one more Python version changes the pipeline file, but gives it no new power. So it passes."
 
-## Scene 2: a risky change is blocked (about 2 minutes)
+### Scene 2: a risky change is blocked (about 2 minutes)
 
 1. Go back to the repository. Click **Add file → Create new file**.
 2. Name it `.github/workflows/format.yml`.
@@ -45,14 +141,14 @@ Read two rows aloud and point at the matching lines in **Files changed**:
 - "a command now contacts collector.example.invalid. The same job can read secrets, so they could be sent there."
 - "now runs on pull_request_target, which people outside the project can set off."
 
-Say: "This is the shape of real attacks from 2025 and 2026: someone adds a
-small workflow that reads a secret and sends it away. A reviewer who is in a
+Say: "This imitates a kind of pipeline attack: someone adds a small
+workflow that reads a secret and sends it away. A reviewer who is in a
 hurry sees ten lines of YAML. My tool turns those ten lines into sentences."
 
 Be honest if asked: the address and the action in the demo do not exist. It
 is an imitation, and nothing is actually stolen.
 
-## Scene 3: fix it and watch the report change (about 1 minute)
+### Scene 3: fix it and watch the report change (about 1 minute)
 
 1. In the same pull request, open **Files changed**, click the three dots on `format.yml`, then **Edit file**.
 2. Delete the last three lines (the `curl` line and the two `env` lines) and change the `on:` line to `on: [workflow_dispatch]`. Do not use `pull_request` here: that would make GitHub try to run the demo file itself.
@@ -66,13 +162,13 @@ Say: "The comment is not a new one. The tool edits its earlier report, so the
 reviewer always sees the current state. And it is still blocked, which is
 correct: I removed the theft, but the pipeline still has more power than it needs."
 
-## After the demo: reset
+### After the live demo: reset
 
 Close both pull requests without merging and delete their branches (GitHub
 shows a **Delete branch** button after closing). Never merge the demo pull
 requests.
 
-## If the internet is down: offline version
+## Offline fallback with Docker (no browser needed)
 
 Run these in the repository folder. Build once before the expo while you have internet.
 
@@ -129,7 +225,7 @@ locked to a commit. That is too noisy for a strict gate on a busy project, so
 today it fits best as an advisory comment.
 
 **What is the final state, in numbers?** Version 0.5 plus the web app.
-Tests: 366 passing locally. Attack cases: 8 of 12 blocked at the default gate
+Tests: 367 passing locally. Attack cases: 8 of 12 blocked at the default gate
 (8 of 10 where a workflow file changes), not independent evidence because the
 rules were tuned to them. Real history: 159 of 1,659 commits (9.6%) would be
 blocked, which measures alert volume, not accuracy; nobody has judged which of

@@ -6,10 +6,13 @@ from dataclasses import dataclass
 
 from .config import Trust, parse_trust
 from .powers import (
+    ADDS_LABELS,
+    ALL_SECRETS,
     BUILT_IN_TOKEN,
     NO_LIMIT,
     RISKY_TRIGGERS,
     RUNTIME_ADDRESS,
+    STARTS_WORKFLOWS,
     Power,
     action_name,
     action_owner,
@@ -84,6 +87,17 @@ def _explain(power: Power, after: set[Power]) -> Finding:
             "the jobs that need more.",
         )
 
+    if kind == "permission" and name == "id-token: write":
+        return Finding(
+            "high",
+            power,
+            f"In {place}, the pipeline can now request identity tokens (OIDC), which cloud "
+            "accounts and package registries such as npm and PyPI accept as proof that "
+            "this pipeline is publishing or deploying.",
+            "Give `id-token: write` only to the release or deploy job, and never in a "
+            "workflow that outsiders can start.",
+        )
+
     if kind == "permission":
         writes = name == "write-all" or name.endswith(": write")
         level = "high" if writes else "low"
@@ -103,6 +117,16 @@ def _explain(power: Power, after: set[Power]) -> Finding:
             power,
             f"In {place}, now passes the pipeline's own token (GITHUB_TOKEN) to a step. "
             "What it can do is set by the permissions.",
+        )
+
+    if kind == "secret" and name == ALL_SECRETS:
+        return Finding(
+            "high",
+            power,
+            f"In {place}, now hands every secret to a step at once (toJSON(secrets)). "
+            "Normal steps name the secrets they need; secret dumps in recent attacks "
+            "(prt-scan, wfx-loot) used this.",
+            "Pass only the secrets the step needs, each by name.",
         )
 
     if kind == "secret":
@@ -192,6 +216,50 @@ def _explain(power: Power, after: set[Power]) -> Finding:
             "Write the command in plain text so reviewers can read it.",
         )
 
+    if kind == "memory":
+        return Finding(
+            "high",
+            power,
+            f"In {place}, a command reads the runner's memory, where secrets are kept. "
+            "This is how the tj-actions/changed-files attack (2025) stole secrets.",
+            "Remove the command; no normal build step needs to read another process's memory.",
+        )
+
+    if kind == "selfmod" and name == STARTS_WORKFLOWS:
+        return Finding("medium", power, f"In {place}, the pipeline can now start other workflows.")
+
+    if kind == "selfmod" and name == ADDS_LABELS:
+        return Finding(
+            "medium",
+            power,
+            f"In {place}, the pipeline can now add labels. If labels act as an approval "
+            "step, it could approve itself.",
+        )
+
+    if kind == "selfmod":
+        return Finding(
+            "high",
+            power,
+            f"In {place}, the pipeline can now write workflow files and push them, so it "
+            "could add a new workflow that reads every secret. The prt-scan campaign (2026) "
+            "did this.",
+            "Do not let a workflow change files under .github/workflows; make that change "
+            "in a reviewed pull request instead.",
+        )
+
+    if kind == "cover":
+        return Finding(
+            "high",
+            power,
+            f"In {place}, a command deletes workflow runs or rewrites git history, which "
+            "removes the evidence of what ran. The wfx-loot campaign (2026) cleaned up "
+            "after itself this way.",
+            "Remove the command; keep run logs and history intact.",
+        )
+
+    if kind == "cache":
+        return Finding("low", power, f"In {place}, now saves or restores a build cache.")
+
     if kind == "runner":
         return Finding(
             "medium",
@@ -206,6 +274,9 @@ def _explain(power: Power, after: set[Power]) -> Finding:
 def _combine(findings: list[Finding], gained: set[Power], after: set[Power]) -> list[Finding]:
     """Raise the level when new powers together look like secret theft."""
     jobs_with_new_network = {p.where for p in gained if p.kind == "network"}
+    outsider_trigger = sorted(
+        p.name for p in after if p.kind == "trigger" and p.name in RISKY_TRIGGERS
+    )
     out: list[Finding] = []
     for f in findings:
         p = f.power
@@ -227,6 +298,23 @@ def _combine(findings: list[Finding], gained: set[Power], after: set[Power]) -> 
                 )
         elif p.kind == "secret" and p.where in jobs_with_new_network:
             f = Finding("high", p, f.message, f.fix)
+        elif outsider_trigger and (
+            p.kind == "cache" or (p.kind == "selfmod" and p.name == ADDS_LABELS)
+        ):
+            why = (
+                "they could put poisoned files in the cache that later release runs restore "
+                "(the Ultralytics attack, 2024)."
+                if p.kind == "cache"
+                else "they could add the approval label to their own pull request."
+            )
+            f = Finding(
+                "high",
+                p,
+                f.message + f" Outsiders can start this workflow ('{outsider_trigger[0]}'), "
+                "so " + why,
+                "Split the workflow: untrusted code runs under 'pull_request' with no cache "
+                "writes and no labels; privileged steps run separately.",
+            )
         out.append(f)
     return out
 
@@ -285,7 +373,20 @@ def _already_had(power: Power, before: set[Power]) -> Finding | None:
 
     same_power_existed = any(b.kind == power.kind and b.name == power.name for b in before)
     if (
-        power.kind in ("secret", "network", "runner", "injection", "hidden", "local", "container")
+        power.kind
+        in (
+            "secret",
+            "network",
+            "runner",
+            "injection",
+            "hidden",
+            "local",
+            "container",
+            "memory",
+            "selfmod",
+            "cover",
+            "cache",
+        )
         and same_power_existed
     ):
         return Finding(

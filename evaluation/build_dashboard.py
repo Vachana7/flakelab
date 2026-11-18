@@ -9,7 +9,9 @@ import html
 import json
 from pathlib import Path
 
-from pipedelta import __version__
+# The result files below were measured with this version. Update it only when
+# they are regenerated, so the page never labels old results with a new version.
+RESULTS_VERSION = "0.4.0"
 from pipedelta.delta import compare
 
 ROOT = Path(__file__).parent.parent
@@ -158,7 +160,7 @@ def main() -> None:
 
     page = TEMPLATE
     for key, value in {
-        "VERSION": __version__,
+        "VERSION": RESULTS_VERSION,
         "DIFF": diff_block(),
         "FINDINGS": items,
         "COUNT": count,

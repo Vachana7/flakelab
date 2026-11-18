@@ -15,8 +15,8 @@ from . import zizmor
 from .config import CONFIG_FILE, Trust, parse_trust
 from .delta import Finding, compare, compare_trust, overall, pin_fix, with_fix
 from .github import resolve_sha, upsert_comment
-from .powers import is_pinned
-from .report import all_findings, render_json, render_markdown, render_text
+from .powers import clean, is_pinned
+from .report import all_findings, render_json, render_markdown, render_sarif, render_text
 
 WORKFLOW_DIR = ".github/workflows/"
 ACTION_FILES = ("action.yml", "action.yaml")
@@ -138,26 +138,101 @@ def _append(path: str | None, text: str) -> None:
         print(f"pipedelta: could not write {path}: {error}", file=sys.stderr)
 
 
+NO_COMMIT = "0" * 40
+
+
+def _has_commit(sha: str) -> bool:
+    found = subprocess.run(
+        ["git", "cat-file", "-e", f"{sha}^{{commit}}"], capture_output=True, check=False
+    )
+    if found.returncode == 0:
+        return True
+    # After a force push the old commit is not in a normal clone; ask for it.
+    subprocess.run(
+        ["git", "fetch", "--quiet", "--depth=1", "origin", sha], capture_output=True, check=False
+    )
+    found = subprocess.run(
+        ["git", "cat-file", "-e", f"{sha}^{{commit}}"], capture_output=True, check=False
+    )
+    return found.returncode == 0
+
+
+def _push_range(event: dict[str, object]) -> tuple[str, str] | None:
+    """Old and new commit of a push. A new branch is compared with its parent commit."""
+    before, after = str(event.get("before") or ""), str(event.get("after") or "")
+    if not after or after == NO_COMMIT:
+        return None  # branch deleted
+    if not before or before == NO_COMMIT:
+        parent = subprocess.run(
+            ["git", "rev-parse", "--verify", "--quiet", f"{after}^"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        before = parent.stdout.strip()
+        if not before:
+            return None
+    return before, after
+
+
+def _push_header(event: dict[str, object], base: str, head: str) -> str:
+    pusher = event.get("pusher")
+    who = pusher.get("name", "someone") if isinstance(pusher, dict) else "someone"
+    ref = str(event.get("ref", "")).removeprefix("refs/heads/")
+    forced = " It was a force push, which rewrites history." if event.get("forced") else ""
+    return (
+        f"Push to `{clean(ref)}` by {clean(who)} ({base[:7]}..{head[:7]}). Changes pushed "
+        "straight to a branch skip pull request review, which is how the GhostAction (2025, "
+        f"2026) and wfx-loot (2026) campaigns planted their workflows.{forced}\n\n"
+    )
+
+
 def _run_action(fail_on: str, use_zizmor: bool) -> int:
-    """Entry point when PipeDelta runs as a GitHub Action on a pull request."""
+    """Entry point when PipeDelta runs as a GitHub Action, on a pull request or a push."""
     with open(os.environ["GITHUB_EVENT_PATH"], encoding="utf-8") as handle:
         event = json.load(handle)
     pr = event.get("pull_request")
-    if not pr:
-        print("pipedelta: this event is not a pull request, nothing to compare.")
-        return 0
-
-    head = pr["head"]["sha"]
-    results = compare_commits(_merge_base(pr["base"]["sha"], head), head, use_zizmor)
     token = os.environ.get("PIPEDELTA_TOKEN", "")
     repo = os.environ.get("GITHUB_REPOSITORY", "")
+    header = ""
+    if pr:
+        head = pr["head"]["sha"]
+        results = compare_commits(_merge_base(pr["base"]["sha"], head), head, use_zizmor)
+    elif "after" in event and "ref" in event:
+        span = _push_range(event)
+        if span is None:
+            print("pipedelta: this push adds no commits to compare.")
+            return 0
+        base, head = span
+        if not _has_commit(base):
+            # Fail closed: an unreadable old commit must not look like "nothing new".
+            print(
+                f"pipedelta: cannot read the commit before the push ({base}). "
+                "Use actions/checkout with fetch-depth: 0.",
+                file=sys.stderr,
+            )
+            return 2
+        results = compare_commits(base, head, use_zizmor)
+        header = _push_header(event, base, head)
+    else:
+        print("pipedelta: this event is not a pull request or a push, nothing to compare.")
+        return 0
+
     if token:
         _resolve_pins(results, token)
-    print(render_text(results))
+    print(header.replace("`", "") + render_text(results))
     markdown = render_markdown(results)
+    if header:
+        markdown = markdown.replace(
+            "## PipeDelta report\n\n", "## PipeDelta report\n\n" + header, 1
+        )
 
-    if token and repo and results:
+    if pr and token and repo and results:
         print("pull request comment:", upsert_comment(repo, int(pr["number"]), token, markdown))
+
+    sarif_path = os.environ.get("PIPEDELTA_SARIF", "")
+    if sarif_path:
+        Path(sarif_path).write_text(render_sarif(results), encoding="utf-8")
 
     level = overall(all_findings(results))
     _append(os.environ.get("GITHUB_STEP_SUMMARY"), markdown)
@@ -195,7 +270,10 @@ def main(argv: list[str] | None = None) -> int:
             help="add zizmor's new findings as a second opinion (auto: if installed)",
         )
         p.add_argument(
-            "--format", choices=["text", "markdown", "json"], default="text", help="output format"
+            "--format",
+            choices=["text", "markdown", "json", "sarif"],
+            default="text",
+            help="output format (sarif: for GitHub code scanning)",
         )
         p.add_argument(
             "--resolve-pins",
@@ -233,6 +311,8 @@ def main(argv: list[str] | None = None) -> int:
         print(render_markdown(results))
     elif args.format == "json":
         print(render_json(results))
+    elif args.format == "sarif":
+        print(render_sarif(results))
     else:
         print(render_text(results))
     return _exit_code(results, args.fail_on)

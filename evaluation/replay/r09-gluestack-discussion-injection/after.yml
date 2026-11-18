@@ -1,0 +1,13 @@
+name: Discussion notify
+on:
+  discussion:
+    types: [created]
+permissions:
+  contents: read
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "New discussion: ${{ github.event.discussion.title }}"
+          echo "${{ github.event.discussion.body }}" > body.txt

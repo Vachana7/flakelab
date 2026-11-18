@@ -204,7 +204,7 @@ async function analyze(query) {
 
   function draw() {
     const tabs = h("div", { class: "tabs", role: "tablist" }, [["github", "GitHub repository"], ["paste", "Paste a workflow"], ["samples", "Examples"]].map(([id, label]) =>
-      h("button", { class: "tab" + (form.tab === id ? " on" : ""), role: "tab", "aria-selected": form.tab === id, onclick: () => { form.tab = id; draw(); } }, label)));
+      h("button", { class: "tab" + (form.tab === id ? " on" : ""), role: "tab", "aria-selected": String(form.tab === id), onclick: () => { form.tab = id; draw(); } }, label)));
     const body = form.tab === "github" ? githubPanel() : form.tab === "paste" ? pastePanel() : samplesPanel();
     mount(h("div", { class: "page-head" }, h("div", {}, h("h1", {}, "Analyze"), h("p", {}, "Pick what to examine. PipeDelta reads the workflow files and reports what a change makes possible, with the lines that show it."))), tabs, body);
   }
@@ -232,7 +232,7 @@ async function analyze(query) {
     const picker = h("select", { class: "in", id: "wf", onchange: (e) => { form.path = e.target.value; } },
       form.workflows.map((w) => h("option", { value: w.path, selected: w.path === form.path }, w.path)));
     const modeSeg = h("div", { class: "seg", role: "group", "aria-label": "What to analyze" }, [["compare", "Latest change"], ["inventory", "Current file"], ["pull", "Pull request"]].map(([id, label]) =>
-      h("button", { type: "button", class: form.mode === id ? "on" : "", "aria-pressed": form.mode === id, onclick: () => { form.mode = id; if (id === "pull" && !form.pulls) loadPulls(); draw(); } }, label)));
+      h("button", { type: "button", class: form.mode === id ? "on" : "", "aria-pressed": String(form.mode === id), onclick: () => { form.mode = id; if (id === "pull" && !form.pulls) loadPulls(); draw(); } }, label)));
     const run = h("button", { class: "btn primary", id: "run", onclick: runGithub }, "Run analysis");
     const pr = h("select", { class: "in", id: "prn" }, (form.pulls || []).map((p) => h("option", { value: p.number }, `#${p.number} ${p.title}${p.draft ? " (draft)" : ""}`)));
     const second = form.mode === "pull"
@@ -289,12 +289,12 @@ async function analyze(query) {
 }
 
 /* analysis result */
-const ui = { tab: "findings", sev: "all", file: 0 };
+const ui = { tab: "findings", sev: "all", file: 0, focus: null };
 async function analysis(id) {
   nav("analyze"); loading(3);
   let a;
   try { a = await api(`/analyses/${id}`); } catch (e) { setCrumbs("Analysis"); return mount(errorBox(e)); }
-  ui.tab = "findings"; ui.sev = "all"; ui.file = 0;
+  ui.tab = "findings"; ui.sev = "all"; ui.file = 0; ui.focus = null;
   setCrumbs(h("a", { href: "#/history", class: "muted" }, "History"), a.title);
   render();
 
@@ -324,7 +324,7 @@ async function analysis(id) {
 
     const allFindings = a.files.flatMap((f, fi) => f.findings.map((x) => ({ ...x, _file: fi })));
     const tabs = h("div", { class: "tabs", role: "tablist" }, [["findings", "Findings", allFindings.length], ["structure", "Jobs and steps", null], ["paths", "Attack paths", file?.paths.length ?? 0], ["diff", "Compare", null]].map(([id, label, c]) =>
-      h("button", { class: "tab" + (ui.tab === id ? " on" : ""), role: "tab", "aria-selected": ui.tab === id, onclick: () => { ui.tab = id; render(); } }, label, c !== null ? h("span", { class: "c" }, c) : null)));
+      h("button", { class: "tab" + (ui.tab === id ? " on" : ""), role: "tab", "aria-selected": String(ui.tab === id), onclick: () => { ui.tab = id; render(); } }, label, c !== null ? h("span", { class: "c" }, c) : null)));
     const fileSel = a.files.length > 1 ? h("select", { class: "in", style: "max-width:380px;margin-bottom:14px", "aria-label": "Workflow file", onchange: (e) => { ui.file = Number(e.target.value); render(); } },
       a.files.map((f, i) => h("option", { value: i, selected: i === ui.file }, `${f.path} · ${f.summary.gained} finding${f.summary.gained === 1 ? "" : "s"}`))) : null;
 
@@ -362,6 +362,13 @@ async function analysis(id) {
     const where = [f.file, f.job && `job ${f.job}`, f.step && `step ${f.step}`, f.line && `line ${f.line}`].filter(Boolean).join(", ");
     return [`**${LEVEL[f.severity] || f.severity}: ${f.title}**`, where && `Where: ${where}`, f.message, f.consequence && `Why it matters: ${f.consequence}`, f.remediation && `What to do: ${f.remediation}`].filter(Boolean).join("\n\n");
   }
+  function diffRowFor(f) {
+    const idx = f._file ?? ui.file;
+    const d = a.files[idx]?.diff;
+    if (!d || d.too_large || !f.line) return null;
+    const hit = d.rows.some((r) => [...(r.b?.findings || []), ...(r.a?.findings || [])].includes(f.id));
+    return hit ? idx : null;
+  }
   function drawer(f, siblings, opener) {
     const list = siblings && siblings.includes(f) ? siblings : [f];
     const at = list.indexOf(f);
@@ -391,6 +398,14 @@ async function analysis(id) {
       h("div", { class: "blk" }, h("h3", {}, "Why it matters"), h("p", {}, f.consequence)),
       h("div", { class: "blk" }, h("h3", {}, "What to do"), h("p", {}, f.remediation)),
       h("div", { class: "drawer-foot" },
+        diffRowFor(f) !== null ? h("button", { class: "btn", id: "show-in-diff", onclick: () => {
+          ui.file = diffRowFor(f); ui.tab = "diff"; ui.focus = f.id; close(); render();
+          const row = document.querySelector(`tr[data-f~="${CSS.escape(f.id)}"]`);
+          row?.scrollIntoView({ block: "center" });
+          const box = document.querySelector(".diff");
+          if (box) box.scrollLeft = f.side === "before" ? 0 : box.scrollWidth;
+          ui.focus = null;
+        } }, "Show in diff") : null,
         h("button", { class: "btn", id: "copy-finding", onclick: async (e) => {
           const btn = e.currentTarget;
           try { await navigator.clipboard.writeText(findingAsMarkdown(f)); btn.textContent = "Copied"; } catch { btn.textContent = "Copy failed"; }
@@ -465,7 +480,8 @@ async function analysis(id) {
     const changed = rows.some((r) => r.t !== "eq");
     if (!changed) return h("div", { class: "card empty" }, h("h3", {}, "The two versions are identical"), "There is no change to compare.");
     const keep = new Set();
-    rows.forEach((r, i) => { if (r.t !== "eq") for (let k = Math.max(0, i - 3); k <= Math.min(rows.length - 1, i + 3); k++) keep.add(k); });
+    const hasFocus = (r) => ui.focus && [...(r.b?.findings || []), ...(r.a?.findings || [])].includes(ui.focus);
+    rows.forEach((r, i) => { if (r.t !== "eq" || hasFocus(r)) for (let k = Math.max(0, i - 3); k <= Math.min(rows.length - 1, i + 3); k++) keep.add(k); });
     const tbody = h("tbody");
     let skipped = 0;
     rows.forEach((r, i) => {
@@ -473,7 +489,7 @@ async function analysis(id) {
       if (skipped) { tbody.append(h("tr", {}, h("td", { colspan: 4, class: "faint", style: "text-align:center;padding:4px" }, `${skipped} unchanged line${skipped === 1 ? "" : "s"}`))); skipped = 0; }
       const ids = [...(r.b?.findings || []), ...(r.a?.findings || [])];
       const pin = ids.length ? h("span", { class: "pin", role: "button", tabindex: 0, title: byId[ids[0]]?.title, onclick: () => drawer(byId[ids[0]]) }) : null;
-      tbody.append(h("tr", { class: r.t + (ids.length ? " mark" : "") },
+      tbody.append(h("tr", { class: r.t + (ids.length ? " mark" : "") + (hasFocus(r) ? " focus" : ""), "data-f": ids.join(" ") },
         h("td", { class: "n na" }, r.a?.n ?? ""), h("td", { class: "a" }, r.a?.text ?? ""),
         h("td", { class: "n nb" }, r.b?.n ?? ""), h("td", { class: "b" }, pin, r.b?.text ?? "")));
     });

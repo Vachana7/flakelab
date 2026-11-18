@@ -202,3 +202,5 @@ textarea.in{font-family:var(--mono);font-size:12.5px;line-height:1.5;min-height:
 
 .drawer-foot{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:22px;padding-top:14px;border-top:1px solid var(--line)}
 .drawer-nav{margin-left:auto;display:flex;gap:8px} .drawer-foot .btn[disabled]{opacity:.4;cursor:default}
+
+.diff tr.focus td{box-shadow:inset 0 0 0 1px var(--accent2),inset 0 0 0 9999px rgba(143,134,255,.14)}

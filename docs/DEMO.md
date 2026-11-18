@@ -75,6 +75,22 @@ checkout stored. zizmor, an established scanner, catches it. PipeDelta runs zizm
 on the old and new file, keeps only what is new, and explains it in the same plain
 words. Where both tools agree, the report says so."
 
+## Scene 6 (new in 0.5, 2 minutes): the 2026 attacks that skipped pull requests
+
+Say: "In 2026 the biggest campaigns, GhostAction and wfx-loot, pushed straight to main
+with stolen tokens. There was no pull request to review."
+
+```sh
+docker compose run --rm ghost     # GhostAction 2026: fake security workflow posts secrets
+docker compose run --rm wfxloot   # wfx-loot 2026: OIDC tokens, every secret, deletes its run
+```
+
+Then show `docs/REPLAY.md`: nine real incidents from Dec 2024 to Nov 2026, 9 of 9
+blocked by 0.5, 6 by 0.4, 2 with a new high from zizmor. Point at the caveats
+section before anyone asks. The push trigger in `.github/workflows/pipedelta.yml`
+is how this runs for real: every push to main is reviewed, and the findings land in
+the Security tab through SARIF.
+
 ## After the demo: reset
 
 Close both pull requests without merging and delete their branches (GitHub
@@ -97,6 +113,16 @@ Pull request #2 in the repository is also kept as a ready-made example in case
 there is no time to create one live.
 
 ## Questions an examiner is likely to ask
+
+- **"Isn't 9 of 9 suspicious?"** Yes, and the document says so: the cases were
+  rebuilt from public write-ups alongside the rules, and one rule was raised after a
+  miss. What it shows is which kinds of change each tool notices. The independent
+  test is still the 1,659 real commits.
+- **"Can't an attacker who pushes also edit PipeDelta's workflow?"** Partly. Removing
+  the step is flagged, and a required check helps, but the real fix is running outside
+  the repository: the GitHub App in Phase 3 of the roadmap.
+- **"How do I know your image is what you built?"** It is signed with Sigstore and has
+  SLSA provenance: `cosign verify` and `gh attestation verify` (README).
 
 **Where is Docker used?** The tool is packaged as a Docker image. GitHub
 builds and runs that image for every pull request, the pipeline tests the

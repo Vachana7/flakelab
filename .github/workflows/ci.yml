@@ -63,7 +63,7 @@ jobs:
           test "$code" -eq 1
       - name: The new demo scenes are blocked
         run: |
-          for scene in sneaky artifact; do
+          for scene in sneaky artifact ghost wfxloot; do
             set +e
             docker compose run --rm "$scene"
             code=$?

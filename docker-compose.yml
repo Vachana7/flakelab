@@ -4,6 +4,8 @@
 #   docker compose run --rm fixed     -> passes with a warning
 #   docker compose run --rm sneaky    -> blocked: attack hidden in a repository action
 #   docker compose run --rm artifact  -> blocked by zizmor's second opinion
+#   docker compose run --rm ghost     -> blocked: GhostAction 2026 workflow pushed to main
+#   docker compose run --rm wfxloot   -> blocked: wfx-loot 2026 (OIDC, secret dump, run deletion)
 #   docker compose up dashboard       -> results page at http://localhost:8080
 x-pipedelta: &pipedelta
   build: .
@@ -29,6 +31,12 @@ services:
   artifact:
     <<: *pipedelta
     command: ["diff", "/data/before.yml", "/data/after-artifact.yml", "--zizmor", "on"]
+  ghost:
+    <<: *pipedelta
+    command: ["diff", "-", "/data/ghostaction-push.yml"]
+  wfxloot:
+    <<: *pipedelta
+    command: ["diff", "/data/docs-before.yml", "/data/wfx-loot-after.yml"]
 
   dashboard:
     image: python:3.12-slim

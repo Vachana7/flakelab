@@ -345,12 +345,12 @@ async function analysis(id) {
       ["high", "medium", "low"].map((k) => chip(k, `${LEVEL[k]} ${gained.filter((f) => f.severity === k).length}`)),
       list.some((f) => ["reduced", "improved"].includes(f.change)) ? chip("removed", "Removed or safer") : null);
     if (!list.length) return h("div", { class: "card empty" }, h("h3", {}, "No findings"), "This change gives the workflow no new power that PipeDelta can see. Removed and safer changes never raise the level.");
-    return h("div", {}, filters, h("div", { class: "card" }, shown.length ? shown.map((f) => findingRow(f, a)) : h("div", { class: "empty" }, "No findings at this level.")));
+    return h("div", {}, filters, h("div", { class: "card" }, shown.length ? shown.map((f) => findingRow(f, a, shown)) : h("div", { class: "empty" }, "No findings at this level.")));
   }
-  function findingRow(f, a) {
+  function findingRow(f, a, siblings) {
     const where = [f.file, f.job && `job ${f.job}`, f.step && `step ${f.step}`, f.line && `line ${f.line}`].filter(Boolean).join(" · ");
     const good = ["reduced", "improved"].includes(f.change);
-    return h("div", { class: "finding", tabindex: 0, role: "button", onclick: () => drawer(f), onkeydown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); drawer(f); } } },
+    return h("div", { class: "finding", tabindex: 0, role: "button", onclick: () => drawer(f, siblings), onkeydown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); drawer(f, siblings); } } },
       h("div", { class: `bar ${good ? "reduced" : f.severity}` }),
       h("div", { style: "min-width:0;flex:1" },
         h("div", { style: "display:flex;gap:8px;align-items:center;flex-wrap:wrap" }, good ? h("span", { class: "badge none" }, f.change === "reduced" ? "Removed" : "Safer") : badge(f.severity), h("span", { class: "t" }, f.title), h("span", { class: "badge plain" }, kindName(f.kind))),
@@ -358,10 +358,21 @@ async function analysis(id) {
       h("span", { class: "badge plain", title: confidenceHelp(f.confidence), style: "align-self:flex-start" }, { high: "Written in file", medium: "Inferred", low: "File is silent" }[f.confidence]));
   }
 
-  function drawer(f) {
+  function findingAsMarkdown(f) {
+    const where = [f.file, f.job && `job ${f.job}`, f.step && `step ${f.step}`, f.line && `line ${f.line}`].filter(Boolean).join(", ");
+    return [`**${LEVEL[f.severity] || f.severity}: ${f.title}**`, where && `Where: ${where}`, f.message, f.consequence && `Why it matters: ${f.consequence}`, f.remediation && `What to do: ${f.remediation}`].filter(Boolean).join("\n\n");
+  }
+  function drawer(f, siblings, opener) {
+    const list = siblings && siblings.includes(f) ? siblings : [f];
+    const at = list.indexOf(f);
+    const prev = opener || document.activeElement;
     const close = () => { bg.remove(); panel.remove(); document.removeEventListener("keydown", esc); prev?.focus(); };
-    const esc = (e) => { if (e.key === "Escape") close(); };
-    const prev = document.activeElement;
+    const go = (step) => { const next = list[at + step]; if (!next) return; bg.remove(); panel.remove(); document.removeEventListener("keydown", esc); drawer(next, list, prev); };
+    const esc = (e) => {
+      if (e.key === "Escape") close();
+      else if (e.key === "ArrowDown" || e.key === "j") { e.preventDefault(); go(1); }
+      else if (e.key === "ArrowUp" || e.key === "k") { e.preventDefault(); go(-1); }
+    };
     const bg = h("div", { class: "drawer-bg", onclick: close });
     const where = [f.file, f.job && `job ${f.job}`, f.step && `step ${f.step}${f.step_label ? ` (${f.step_label})` : ""}`, f.line && `line ${f.line}`].filter(Boolean);
     const panel = h("aside", { class: "drawer", role: "dialog", "aria-modal": "true", "aria-label": f.title },
@@ -378,7 +389,17 @@ async function analysis(id) {
       f.snippet?.length ? h("div", { class: "blk" }, h("h3", {}, "Evidence in the file"), h("div", { class: "code" }, f.snippet.map((l) =>
         h("div", { class: "ln" + (l.hit ? " hit" : "") }, h("i", {}, l.number), h("span", {}, l.text || " "))))) : null,
       h("div", { class: "blk" }, h("h3", {}, "Why it matters"), h("p", {}, f.consequence)),
-      h("div", { class: "blk" }, h("h3", {}, "What to do"), h("p", {}, f.remediation)));
+      h("div", { class: "blk" }, h("h3", {}, "What to do"), h("p", {}, f.remediation)),
+      h("div", { class: "drawer-foot" },
+        h("button", { class: "btn", id: "copy-finding", onclick: async (e) => {
+          const btn = e.currentTarget;
+          try { await navigator.clipboard.writeText(findingAsMarkdown(f)); btn.textContent = "Copied"; } catch { btn.textContent = "Copy failed"; }
+          setTimeout(() => { btn.textContent = "Copy for a PR comment"; }, 1800);
+        } }, "Copy for a PR comment"),
+        list.length > 1 ? h("span", { class: "faint" }, `Finding ${at + 1} of ${list.length}`) : null,
+        list.length > 1 ? h("span", { class: "drawer-nav" },
+          h("button", { class: "btn", disabled: at === 0, "aria-label": "Previous finding (up arrow or k)", onclick: () => go(-1) }, "Previous"),
+          h("button", { class: "btn", disabled: at === list.length - 1, "aria-label": "Next finding (down arrow or j)", onclick: () => go(1) }, "Next")) : null));
     document.body.append(bg, panel);
     document.addEventListener("keydown", esc);
     panel.querySelector("button").focus();

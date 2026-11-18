@@ -162,14 +162,17 @@ def render_sarif(results: Results) -> str:
     """SARIF 2.1.0, so findings show in GitHub's Security tab (code scanning).
 
     Upload it with github/codeql-action/upload-sarif. PipeDelta does not track
-    line numbers, so each result points at line 1 of its file.
+    line numbers, so each result points at line 1 of its file. Low-level notes
+    (version bumps, GitHub's own actions) are left out: code scanning turns every
+    result into an alert and a review comment, and those would bury the real ones.
     """
     import hashlib
     import json
 
     from . import __version__
 
-    kinds = sorted({f.power.kind for f in all_findings(results)})
+    kept = {path: [f for f in fs if f.level != "low"] for path, fs in results.items()}
+    kinds = sorted({f.power.kind for f in all_findings(kept)})
     rules = [
         {
             "id": f"pipedelta/{kind}",
@@ -180,7 +183,7 @@ def render_sarif(results: Results) -> str:
         for kind in kinds
     ]
     out = []
-    for path, findings in results.items():
+    for path, findings in kept.items():
         for f in findings:
             text = f.message + (f" Fix: {f.fix}" if f.fix else "")
             key = f"{path}|{f.power.kind}|{f.power.name}|{f.power.where}"

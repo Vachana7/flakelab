@@ -88,6 +88,13 @@ def test_sarif_is_valid_shape():
     assert loc == ".github/workflows/ci.yml"
 
 
+def test_sarif_leaves_out_low_notes():
+    after = BASE + "      - uses: actions/setup-node@0a44ba7841725637a19e28fa30b79a866c81b0a6\n"
+    findings = compare(BASE, after)
+    assert findings and all(f.level == "low" for f in findings)
+    assert json.loads(render_sarif({"ci.yml": findings}))["runs"][0]["results"] == []
+
+
 def test_every_replayed_incident_is_blocked():
     root = Path(__file__).parent.parent / "evaluation" / "replay"
     cases = sorted(p for p in root.iterdir() if p.is_dir())

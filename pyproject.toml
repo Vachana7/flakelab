@@ -16,7 +16,7 @@ build-backend = "setuptools.build_meta"
 packages = ["pipedelta", "pipedelta.web"]
 
 [tool.setuptools.package-data]
-"pipedelta.web" = ["static/*", "samples/*"]
+"pipedelta.web" = ["static/*", "samples/*", "incidents/*/*"]
 
 [tool.ruff]
 line-length = 100

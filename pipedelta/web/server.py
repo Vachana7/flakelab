@@ -28,6 +28,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 from .. import __version__
 from . import reports
 from .github_client import GitHub, GitHubError, parse_repository, token_from_environment
+from .incidents import incident_list, load_incident
 from .samples import load_sample, sample_list
 from .service import AnalysisService, InputError
 from .store import Store
@@ -231,6 +232,9 @@ def make_server(
             if route == ("GET", "/samples"):
                 return self._json(200, {"samples": sample_list()})
 
+            if route == ("GET", "/incidents"):
+                return self._json(200, {"incidents": incident_list()})
+
             if route == ("POST", "/analyses"):
                 return self._json(200, self._create_analysis(body))
 
@@ -302,7 +306,14 @@ def make_server(
                 if sample is None:
                     raise InputError("no_sample", "No such sample.", 404)
                 return service.pasted(sample["name"], sample["before"], sample["after"], "sample")
-            raise InputError("bad_mode", "mode must be inventory, compare, pull, paste or sample.")
+            if kind == "incident":
+                case = load_incident(str(body.get("incident", "")))
+                if case is None:
+                    raise InputError("no_incident", "No such incident.", 404)
+                return service.pasted(case["name"], case["before"], case["after"], "incident")
+            raise InputError(
+                "bad_mode", "mode must be inventory, compare, pull, paste, sample or incident."
+            )
 
         # -- static files --
 

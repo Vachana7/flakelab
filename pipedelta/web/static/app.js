@@ -565,6 +565,145 @@ async function repos() {
       } }, "Remove"))))));
 }
 
+
+/* ---------- attack replay: real incidents, run live through this app's engine ---------- */
+const replayRuns = {}; // incident id -> analysis summary from this session
+async function incidents(query) {
+  nav("incidents"); setCrumbs("Attack replay"); loading(3);
+  let list;
+  try { list = (await api("/incidents")).incidents; } catch (e) { return mount(errorBox(e, () => incidents(query))); }
+  const params = new URLSearchParams(query || "");
+  let pick = list.find((c) => c.id === params.get("id")) || list.find((c) => c.id.includes("ghostaction")) || list[0];
+  const head = h("div", { class: "page-head" },
+    h("div", {}, h("h1", {}, "Attack replay"),
+      h("p", {}, "Nine real supply-chain attacks from December 2024 to November 2026, each rebuilt from its public write-up as the workflow change it made. Pick one and run it through PipeDelta.")),
+    h("div", { class: "chips" }, h("button", { class: "btn", type: "button", onclick: (ev) => runAll(ev.currentTarget) }, "Run all")));
+  const tbody = h("tbody");
+  const detail = h("div", { class: "card replay-detail" });
+  const scoreEl = h("div", { class: "replay-score" });
+
+  function verdict(c) {
+    const r = replayRuns[c.id];
+    if (!c.runnable) return badge("plain", "Upstream review");
+    if (!r) return h("span", { class: "faint" }, "not run");
+    return r.level === "high" ? badge("high", "Blocked") : badge(r.level === "none" ? "none" : r.level, r.level === "none" ? "Nothing new" : `${LEVEL[r.level]} only`);
+  }
+  function score() {
+    const done = list.filter((c) => c.runnable && replayRuns[c.id]);
+    const blocked = done.filter((c) => replayRuns[c.id].level === "high").length;
+    scoreEl.replaceChildren(done.length
+      ? h("span", {}, h("b", {}, `${blocked} of ${done.length}`), " run here were blocked by this app's engine")
+      : h("span", { class: "muted" }, "Run an incident to see this app's engine judge it live."));
+  }
+  function rows() {
+    tbody.replaceChildren(...list.map((c) => h("tr", { class: c === pick ? "on" : null, onclick: () => { pick = c; rows(); drawDetail(); } },
+      h("td", { class: "mono faint" }, c.date),
+      h("td", {}, h("b", {}, c.incident), h("div", { class: "faint", style: "font-size:12.5px" }, c.title)),
+      h("td", {}, h("span", { class: `via${/push|token|stolen/.test(c.delivery) ? " push" : ""}` }, shortVia(c.delivery))),
+      h("td", {}, verdict(c)))));
+    score();
+  }
+  async function run(c, open) {
+    const a = await api("/analyses", { method: "POST", body: { mode: "incident", incident: c.id } });
+    replayRuns[c.id] = { id: a.id, level: a.summary ? a.summary.level : (a.level || "none"), counts: a.summary ? a.summary.counts : {} };
+    if (open) location.hash = `#/analysis/${a.id}`;
+    return a;
+  }
+  async function runAll(btn) {
+    btn.disabled = true;
+    try {
+      for (const c of list.filter((x) => x.runnable)) { btn.textContent = `Running ${c.incident}…`; await run(c, false); rows(); }
+      drawDetail(); toast("Done. Each result is saved in History too.");
+    } catch (e) { toast(e.message, true); }
+    btn.disabled = false; btn.textContent = "Run all";
+  }
+  function drawDetail() {
+    const c = pick, r = replayRuns[c.id];
+    const go = h("button", { class: "btn primary", type: "button", onclick: async () => {
+      go.disabled = true; go.textContent = "Analysing…";
+      try { await run(c, true); } catch (e) { toast(e.message, true); go.disabled = false; go.textContent = "Run in PipeDelta"; }
+    } }, "Run in PipeDelta");
+    detail.replaceChildren(
+      h("div", { class: "sec-title" }, h("div", {}, h("h2", {}, c.incident), h("div", { class: "faint", style: "font-size:12.5px;margin-top:2px" }, `${c.date} · ${c.delivery}`)),
+        h("div", { class: "chips" }, r ? h("a", { class: "btn ghost", href: `#/analysis/${r.id}` }, "Open last result") : null, c.runnable ? go : null)),
+      h("div", { class: "card-body" },
+        h("p", { style: "margin-bottom:12px" }, c.title),
+        c.runnable ? null : h("div", { class: "notice" }, "This change is to the action's own code (its action.yml), which your repository never sees. The command-line release catches it; the app reads workflow files only, so upstream review is on the roadmap."),
+        yamlDiff(c.before, c.after),
+        h("p", { class: "faint", style: "margin-top:12px;font-size:12.5px" }, c.note, " ",
+          h("a", { href: c.source, target: "_blank", rel: "noopener noreferrer", class: "link" }, "Public write-up ↗"))));
+  }
+  rows(); drawDetail();
+  mount(head,
+    h("div", { class: "grid g32 replay" },
+      h("div", { class: "card" }, h("div", { class: "sec-title" }, h("h2", {}, "Incidents"), scoreEl),
+        h("div", { class: "table-wrap" }, h("table", { class: "table replay-table" },
+          h("thead", {}, h("tr", {}, h("th", {}, "When"), h("th", {}, "Incident"), h("th", {}, "How it arrived"), h("th", {}, "Result"))), tbody))),
+      detail),
+    h("p", { class: "faint", style: "margin-top:14px;font-size:12.5px;max-width:90ch" },
+      "Results here come from this app's analysis engine, computed when you press Run. The command-line release 0.5 adds rules for memory dumps, poisoned caches and self-written workflows, and scores 9 of 9 on the same cases; those rules are being merged into the app. See Benchmark for the published numbers."));
+}
+function shortVia(d) {
+  if (/upstream/.test(d)) return "upstream tag";
+  if (/pull_request_target token/.test(d)) return "token push";
+  if (/push|stolen/.test(d)) return "direct push";
+  return "pull request";
+}
+/* A small line diff for showing an incident: unchanged, added and removed lines. */
+function yamlDiff(before, after) {
+  const a = (before || "").split("\n"), b = (after || "").split("\n");
+  if (a[a.length - 1] === "") a.pop(); if (b[b.length - 1] === "") b.pop();
+  const n = a.length, m = b.length, L = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) L[i][j] = a[i] === b[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+  const out = []; let i = 0, j = 0;
+  while (i < n || j < m) {
+    if (i < n && j < m && a[i] === b[j]) { out.push([" ", b[j]]); i++; j++; }
+    else if (j < m && (i >= n || L[i][j + 1] >= L[i + 1][j])) { out.push(["+", b[j]]); j++; }
+    else { out.push(["-", a[i]]); i++; }
+  }
+  return h("div", { class: "code ydiff" }, out.map(([k, t]) => h("div", { class: `ln ${k === "+" ? "add" : k === "-" ? "del" : ""}` }, h("i", {}, k === " " ? "" : k), h("span", {}, t || " "))));
+}
+
+/* ---------- benchmark: the published numbers, how it works, roadmap ---------- */
+function benchmark() {
+  nav("benchmark"); setCrumbs("Benchmark");
+  const bar = (name, v, total, us) => h("div", { class: `bar-row big${us ? " us" : ""}` }, h("span", {}, name),
+    h("div", { class: "track" }, h("div", { class: "fill", style: `width:${(v / total) * 100}%;background:${us ? "var(--accent)" : "var(--line2)"}` })),
+    h("span", { class: "v" }, `${v}/${total}`));
+  const big = (n, l) => h("div", { class: "kpi" }, h("b", {}, n), h("span", {}, l));
+  const step = (k, t, d) => h("div", { class: "card pad how" }, h("div", { class: "how-k" }, k), h("h3", {}, t), h("p", { class: "muted" }, d));
+  const phase = (st, t, d, done) => h("div", { class: `phase${done ? " done" : ""}` }, h("span", { class: "pdot" }), h("div", { class: "pst" }, st), h("h3", {}, t), h("p", { class: "muted" }, d));
+  mount(
+    h("div", { class: "page-head" }, h("div", {}, h("h1", {}, "Benchmark"),
+      h("p", {}, "Measured, with the caveats left in. These are the published results for the PipeDelta command-line release 0.5."))),
+    h("div", { class: "grid g32" },
+      h("div", { class: "card" }, h("div", { class: "sec-title" }, h("h2", {}, "Incident replay: attacks blocked"), h("span", { class: "faint" }, "9 incidents, Dec 2024 to Nov 2026")),
+        h("div", { class: "bars" }, bar("PipeDelta 0.5", 9, 9, true), bar("PipeDelta 0.4", 6, 9), bar("zizmor 1.32", 2, 9)),
+        h("p", { class: "faint card-body", style: "font-size:12.5px;padding-top:0" },
+          "Blocked means a high finding on the change. The cases were rebuilt alongside the 0.5 rules and one rule was raised after a miss, so this is not an independent test. zizmor is built to judge a file's posture, not a change. ",
+          h("a", { class: "link", href: "#/incidents" }, "Replay them yourself →"))),
+      h("div", { class: "card" }, h("div", { class: "sec-title" }, h("h2", {}, "Real history, 1,659 commits")),
+        h("div", { class: "kpis" },
+          big("9.3%", "of real workflow commits flagged high by PipeDelta 0.4, mostly unpinned outside actions"),
+          big("31.2%", "would get a new high from zizmor alone"),
+          big("9 of 12", "self-written attack cases blocked (zizmor 5, poutine 2)")))),
+    h("div", { class: "card", style: "margin-top:16px" },
+      h("div", { class: "sec-title" }, h("h2", {}, "Why it exists")),
+      h("p", { class: "card-body", style: "max-width:85ch" },
+        "The biggest 2026 attacks never opened a pull request. GhostAction's return hit more than 30,000 repositories and wfx-loot about 8,000. Both used stolen tokens to push secret-stealing workflows straight to the default branch, so pull-request checks never ran. Scanners judge whether a file is weak today. PipeDelta asks a different question: what did this change add?")),
+    h("h2", { class: "band-title" }, "How it works: diff the powers, not the lines"),
+    h("div", { class: "grid g3" },
+      step("Step 1", "Read both versions", "Workflow files at the base and the head of a pull request or a push. The trust list comes from the base, so a change cannot trust itself."),
+      step("Step 2", "List the powers gained", "Secrets, addresses, token permissions, OIDC identity, triggers, outside code, caches and hidden commands. Renames and version bumps are not counted as new."),
+      step("Step 3", "Explain and block", "One sentence per power, a concrete fix, and a failing check at the level you choose. The same report goes to the PR comment, the run summary and GitHub's Security tab.")),
+    h("h2", { class: "band-title" }, "Roadmap"),
+    h("div", { class: "card pad" }, h("div", { class: "road" },
+      phase("Shipped in 0.5", "Proof", "2026 attack rules, push review, replay benchmark, SARIF, signed multi-arch images.", true),
+      phase("Next", "Upstream review", "Diff an action's own code when its pinned commit changes. Merge the 0.5 rules into this app."),
+      phase("Planned", "Org monitor", "A GitHub App that reviews every push. Helm chart, Prometheus metrics, Grafana board."),
+      phase("Later", "Reach", "Scale run on 500+ repositories, egress log comparison, a GitLab CI adapter."))));
+}
+
 /* ---------- router ---------- */
 function route() {
   const [path, query] = location.hash.slice(1).split("?");
@@ -574,6 +713,8 @@ function route() {
   if (parts[0] === "analysis" && parts[1]) return analysis(parts[1]);
   if (parts[0] === "history") return history();
   if (parts[0] === "repos") return repos();
+  if (parts[0] === "incidents") return incidents(query);
+  if (parts[0] === "benchmark") return benchmark();
   nav(""); setCrumbs("Not found");
   mount(h("div", { class: "card empty" }, h("h3", {}, "That page does not exist"), h("a", { class: "btn primary", href: "#/" }, "Go to overview")));
 }

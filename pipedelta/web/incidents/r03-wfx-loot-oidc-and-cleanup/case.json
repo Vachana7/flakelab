@@ -1,0 +1,9 @@
+{
+  "title": "Workflow edited to mint cloud OIDC tokens, send all secrets out, then delete its own run",
+  "incident": "wfx-loot",
+  "date": "2026-11",
+  "source": "https://techaeris.com/2026/11/12/github-actions-attack-hits-1835-repos/",
+  "delivery": "direct push with stolen tokens, followed by 'ci: cleanup' commits",
+  "note": "Shape reconstructed from the public summary (OIDC minting, gzipped exfiltration, trace removal); exact payload not public.",
+  "id": "r03-wfx-loot-oidc-and-cleanup"
+}

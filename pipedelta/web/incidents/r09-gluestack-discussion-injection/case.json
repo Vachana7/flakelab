@@ -1,0 +1,9 @@
+{
+  "title": "Discussion title and body pasted into a shell command",
+  "incident": "gluestack-ui (CVE-2025-53104)",
+  "date": "2025-06",
+  "source": "https://www.stephane-robert.info/en/docs/github-actions/security/supply-chain-attacks/",
+  "delivery": "pull request introducing the precondition",
+  "note": "Anyone who opens a discussion containing $(...) runs code on the runner.",
+  "id": "r09-gluestack-discussion-injection"
+}

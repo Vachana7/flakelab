@@ -43,6 +43,8 @@ Expected in the terminal: `PipeDelta 0.5.0 is running at http://127.0.0.1:8765`,
 Open **http://127.0.0.1:8765** in Chrome. The left menu shows Overview, Analyze,
 History, Repositories. Overview shows zeros because `demo.db` is new.
 
+**Shortcut:** double-click `start-demo.bat` in the project folder. It does the same steps (no token, clean history, starts the server) and opens Chrome at the address after a few seconds. If Chrome does not open, type the address yourself. Keep the black window open.
+
 The two `Remove-Item` lines make sure no token is set and the history is clean.
 **The offline demo never uses a token. Do not type or paste a token during the expo.**
 

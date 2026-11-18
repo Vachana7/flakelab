@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PipeDelta</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="shell">
+  <aside class="side" id="side">
+    <a class="brand" href="#/" aria-label="PipeDelta home">
+      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><path d="M16 4 29 27H3z" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/><path d="M16 13l6 10H10z" fill="var(--accent)"/></svg>
+      <span>PipeDelta</span>
+    </a>
+    <nav class="nav" aria-label="Main">
+      <a href="#/" data-nav="overview"><svg viewBox="0 0 20 20"><path d="M3 10.5 10 4l7 6.5V16a1 1 0 0 1-1 1h-3.5v-4.5h-5V17H4a1 1 0 0 1-1-1z"/></svg>Overview</a>
+      <a href="#/analyze" data-nav="analyze"><svg viewBox="0 0 20 20"><circle cx="9" cy="9" r="5.5"/><path d="m13.5 13.5 3.5 3.5"/></svg>Analyze</a>
+      <a href="#/history" data-nav="history"><svg viewBox="0 0 20 20"><path d="M3.5 10a6.5 6.5 0 1 0 2-4.7M3.5 3.5v3h3M10 6.5V10l2.5 1.5"/></svg>History</a>
+      <a href="#/repos" data-nav="repos"><svg viewBox="0 0 20 20"><path d="M5 3.5h9a1 1 0 0 1 1 1V14H6a1 1 0 0 0-1 1zm0 11.5a1 1 0 0 0 1 1h9M5 15V4.5"/></svg>Repositories</a>
+    </nav>
+    <div class="side-foot" id="session" aria-live="polite"></div>
+  </aside>
+  <div class="main">
+    <header class="top">
+      <button class="icon-btn menu" id="menu" aria-label="Open menu"><svg viewBox="0 0 20 20"><path d="M3 5.5h14M3 10h14M3 14.5h14"/></svg></button>
+      <div class="crumbs" id="crumbs"></div>
+      <div class="top-actions"><a class="btn primary" href="#/analyze">New analysis</a></div>
+    </header>
+    <main id="view" tabindex="-1"></main>
+  </div>
+</div>
+<div id="toasts" class="toasts" aria-live="polite"></div>
+<script src="app.js"></script>
+</body>
+</html>

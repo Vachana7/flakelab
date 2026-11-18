@@ -75,6 +75,28 @@ jobs:
           set -e
           test "$code" -eq 1
 
+      - name: The web app starts in the container, answers health, and analyses an example
+        run: |
+          docker run -d --name pdweb -p 127.0.0.1:8765:8765 --entrypoint pipedelta pipedelta:ci \
+            serve --host 0.0.0.0 --db /tmp/pipedelta.db
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8765/api/health && break
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:8765/api/health | grep '"ok": true'
+          curl -fsS http://127.0.0.1:8765/ | grep -q '<title>PipeDelta</title>'
+          curl -fsS -X POST http://127.0.0.1:8765/api/analyses \
+            -H 'Content-Type: application/json' \
+            -d '{"mode":"sample","sample":"imitation-attack"}' > /tmp/analysis.json
+          grep -q '"level": "high"' /tmp/analysis.json
+          id=$(python3 -c "import json;print(json.load(open('/tmp/analysis.json'))['id'])")
+          curl -fsS "http://127.0.0.1:8765/api/analyses/$id/report?format=sarif" | grep -q '"version": "2.1.0"'
+          curl -fsS http://127.0.0.1:8765/api/stats | grep -q '"analyses": 1'
+          # a request that names another host must be refused
+          code=$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: evil.example' http://127.0.0.1:8765/api/health)
+          test "$code" -eq 403
+          docker rm -f pdweb
+
   publish:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest

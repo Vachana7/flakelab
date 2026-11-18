@@ -135,7 +135,12 @@ def main(argv: list[str] | None = None) -> int:
 
     a = sub.add_parser("action", help="run inside GitHub Actions on a pull request")
 
-    for p in (d, g, a):
+    w = sub.add_parser("serve", help="start the PipeDelta web app on this computer")
+    w.add_argument("--host", default="127.0.0.1")
+    w.add_argument("--port", type=int, default=8765)
+    w.add_argument("--db", default="pipedelta.db", help="where analysis history is kept")
+
+    for p in (d, g, a):  # the three commands that gate a change
         p.add_argument(
             "--fail-on",
             choices=["low", "medium", "high", "never"],
@@ -144,6 +149,10 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     args = parser.parse_args(argv)
+    if args.command == "serve":
+        from .web.server import serve
+
+        return serve(args.host, args.port, args.db)
     results: dict[str, list[Finding]] = {}
 
     try:

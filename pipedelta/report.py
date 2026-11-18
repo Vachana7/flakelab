@@ -133,3 +133,99 @@ def render_markdown(results: Results) -> str:
         ),
     ]
     return "\n".join(lines) + "\n"
+
+
+_SARIF_LEVEL = {"high": "error", "medium": "warning", "low": "note"}
+_RULES = {
+    "trigger": "Runs on a new trigger",
+    "permission": "Pipeline token gains a permission",
+    "secret": "Can read a new secret",
+    "action": "Runs new outside code",
+    "network": "Contacts a new address",
+    "injection": "Outsider text reaches a shell command",
+    "hidden": "Runs hidden (encoded) commands",
+    "runner": "Runs on a self-hosted machine",
+    "local": "Runs a repository action",
+    "container": "Uses a new container image",
+    "code": "Runs code PipeDelta cannot read",
+    "guard": "PipeDelta check removed",
+    "trust": "Trust list widened",
+    "memory": "Reads the runner's memory",
+    "selfmod": "Can change, start or approve workflows",
+    "cover": "Deletes runs or rewrites history",
+    "cache": "Shares a build cache",
+    "zizmor": "New zizmor finding",
+}
+
+
+def render_sarif(results: Results) -> str:
+    """SARIF 2.1.0, so findings show in GitHub's Security tab (code scanning).
+
+    Upload it with github/codeql-action/upload-sarif. PipeDelta does not track
+    line numbers, so each result points at line 1 of its file. Low-level notes
+    (version bumps, GitHub's own actions) are left out: code scanning turns every
+    result into an alert and a review comment, and those would bury the real ones.
+    """
+    import hashlib
+    import json
+
+    from . import __version__
+
+    kept = {path: [f for f in fs if f.level != "low"] for path, fs in results.items()}
+    kinds = sorted({f.power.kind for f in all_findings(kept)})
+    rules = [
+        {
+            "id": f"pipedelta/{kind}",
+            "name": kind,
+            "shortDescription": {"text": _RULES.get(kind, kind)},
+            "helpUri": "https://github.com/Vachana7/pipedelta#readme",
+        }
+        for kind in kinds
+    ]
+    out = []
+    for path, findings in kept.items():
+        for f in findings:
+            text = f.message + (f" Fix: {f.fix}" if f.fix else "")
+            key = f"{path}|{f.power.kind}|{f.power.name}|{f.power.where}"
+            out.append(
+                {
+                    "ruleId": f"pipedelta/{f.power.kind}",
+                    "ruleIndex": kinds.index(f.power.kind),
+                    "level": _SARIF_LEVEL.get(f.level, "note"),
+                    "message": {"text": text},
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {"uri": path},
+                                "region": {"startLine": 1},
+                            }
+                        }
+                    ],
+                    "partialFingerprints": {
+                        "pipedelta/v1": hashlib.sha256(key.encode()).hexdigest()[:32]
+                    },
+                    "properties": {
+                        "security-severity": {"high": "8.0", "medium": "5.0"}.get(f.level, "2.0")
+                    },
+                }
+            )
+    return json.dumps(
+        {
+            "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+            "version": "2.1.0",
+            "runs": [
+                {
+                    "tool": {
+                        "driver": {
+                            "name": "PipeDelta",
+                            "version": __version__,
+                            "informationUri": "https://github.com/Vachana7/pipedelta",
+                            "rules": rules,
+                        }
+                    },
+                    "results": out,
+                }
+            ],
+        },
+        indent=2,
+    )

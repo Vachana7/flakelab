@@ -1,5 +1,5 @@
 name: PipeDelta
-description: Report what new powers a pull request gives the GitHub Actions pipeline
+description: Report what new powers a pull request or push gives the GitHub Actions pipeline
 branding:
   icon: shield
   color: blue
@@ -13,6 +13,9 @@ inputs:
   zizmor:
     description: Also run zizmor on the old and new files and report its new findings in plain words (on, off)
     default: "off"
+  sarif-file:
+    description: Also write the findings as SARIF to this path, for github/codeql-action/upload-sarif. Leave empty for none.
+    default: ""
 outputs:
   level:
     description: Highest level among the new powers (none, low, medium, high)
@@ -29,3 +32,4 @@ runs:
     - ${{ inputs.zizmor }}
   env:
     PIPEDELTA_TOKEN: ${{ inputs.token }}
+    PIPEDELTA_SARIF: ${{ inputs.sarif-file }}

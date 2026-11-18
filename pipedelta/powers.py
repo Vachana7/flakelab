@@ -133,6 +133,26 @@ HIDDEN_RE = re.compile(
     + r"|FromBase64String"
     + r"|exec\(\s*(base64\.b64decode|__import__\(['\"]base64)"
 )
+# Patterns seen in the 2025 and 2026 attacks.
+# Reading the runner's memory, where secrets are kept (tj-actions/changed-files, 2025).
+MEMORY_RE = re.compile(
+    r"/proc/[^\s'\"]*/(mem|maps|environ)\b|Runner\.Worker|memdump", re.IGNORECASE
+)
+# Writing workflow files from inside a workflow (prt-scan, 2026): needs both a
+# workflow path and a way to push it.
+WORKFLOW_PATH_RE = re.compile(r"\.github/workflows")
+PUSH_RE = re.compile(r"\bgit\s+push\b|\bgh\s+api\b|/contents/|createOrUpdateFileContents")
+# Starting other workflows.
+DISPATCH_RE = re.compile(r"\bgh\s+workflow\s+run\b|/dispatches\b|createWorkflowDispatch")
+# Adding labels, which some projects use as an approval gate (prt-scan, 2026).
+LABEL_RE = re.compile(r"\bgh\s+(pr|issue)\s+edit\b[^\n]*--add-label|/labels\b|addLabels")
+# Deleting run logs or rewriting history to hide what happened (wfx-loot, 2026).
+COVER_RE = re.compile(
+    r"\bgh\s+run\s+delete\b|deleteWorkflowRun|deleteWorkflowRunLogs"
+    r"|-X\s*DELETE[^\n]*/actions/runs|/actions/runs/[^\n]*(-X\s*DELETE|--method\s+DELETE)"
+    r"|\bgit\s+push\b[^\n]*(--force\b|\s-f\b|\s\+\S)"
+)
+
 # a 40-character commit id means the action version cannot be swapped later
 PINNED_RE = re.compile(r"@[0-9a-f]{40}$")
 
@@ -143,7 +163,8 @@ RISKY_TRIGGERS = {"pull_request_target", "workflow_run", "issue_comment"}
 
 @dataclass(frozen=True, order=True)
 class Power:
-    kind: str  # trigger, permission, secret, action, network, injection, runner, hidden
+    kind: str  # trigger, permission, secret, action, network, injection, runner, hidden,
+    # memory, selfmod, cover, cache
     name: str  # the specific thing, e.g. "AWS_KEY" or "contents: write"
     where: str = "workflow"  # which job it was found in
 
@@ -309,11 +330,47 @@ def _steps_powers(steps: Any, where: str) -> set[Power]:
             texts.append(with_["script"])
             if HIDDEN_RE.search(with_["script"]) or "eval(" in with_["script"]:
                 powers.add(Power("hidden", "decodes hidden text and runs it", where))
+        powers.update(_attack_patterns(texts, where))
+        if isinstance(uses, str) and _uses_cache(uses, with_):
+            powers.add(Power("cache", "shares a build cache with other runs", where))
         if any(has_injection(t) for t in texts):
             powers.add(
                 Power("injection", "outsider-controlled text used in a shell command", where)
             )
     return powers
+
+
+WRITES_WORKFLOWS = "writes workflow files"
+STARTS_WORKFLOWS = "starts other workflows"
+ADDS_LABELS = "adds labels to pull requests or issues"
+
+
+def _attack_patterns(texts: list[str], where: str) -> set[Power]:
+    """Commands seen in recent real attacks, in run: blocks and github-script."""
+    powers: set[Power] = set()
+    for text in texts:
+        if MEMORY_RE.search(text):
+            powers.add(Power("memory", "reads the runner's memory, where secrets are kept", where))
+        if WORKFLOW_PATH_RE.search(text) and PUSH_RE.search(text):
+            powers.add(Power("selfmod", WRITES_WORKFLOWS, where))
+        if DISPATCH_RE.search(text):
+            powers.add(Power("selfmod", STARTS_WORKFLOWS, where))
+        if LABEL_RE.search(text):
+            powers.add(Power("selfmod", ADDS_LABELS, where))
+        if COVER_RE.search(text):
+            powers.add(Power("cover", "deletes workflow runs or rewrites git history", where))
+    return powers
+
+
+def _uses_cache(uses: str, with_: Any) -> bool:
+    """actions/cache, or a setup action with its built-in cache turned on."""
+    name = action_name(uses)
+    if name.startswith("actions/cache"):
+        return True
+    if isinstance(with_, dict):
+        value = with_.get("cache")
+        return isinstance(value, str) and value.strip() not in ("", "false")
+    return False
 
 
 def extract_powers(text: str) -> set[Power]:

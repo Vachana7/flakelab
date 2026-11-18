@@ -1,0 +1,180 @@
+[
+  {
+    "case": "r01-tj-actions-memory-dump",
+    "title": "Action code changed to dump the runner's memory into the log",
+    "incident": "tj-actions/changed-files",
+    "date": "2025-03",
+    "source": "https://www.wiz.io/blog/github-action-tj-actions-changed-files-supply-chain-attack-cve-2025-30066",
+    "delivery": "upstream action tag moved",
+    "note": "Modelled as a diff of the action's own action.yml, which is what upstream review (roadmap) would see. Users of the action saw no change in their own files; payload simplified.",
+    "pipedelta_version": "0.5.0",
+    "level": "high",
+    "blocked_at_default": true,
+    "high_findings": [
+      "memory"
+    ],
+    "zizmor_new_findings": [],
+    "zizmor_high": false,
+    "v0_4_level": "none"
+  },
+  {
+    "case": "r02-ghostaction-2026-direct-push",
+    "title": "Fake 'Github Actions Security' workflow pushed straight to the default branch",
+    "incident": "GhostAction return",
+    "date": "2026-09",
+    "source": "https://nhimg.org/ghostaction-returns-2026-772-repositories",
+    "delivery": "direct push with stolen credentials (no pull request)",
+    "note": "Reconstructed from the public description: lists the secret names used by real pipelines and posts the values over plain HTTP. Caught only if PipeDelta also runs on push.",
+    "pipedelta_version": "0.5.0",
+    "level": "high",
+    "blocked_at_default": true,
+    "high_findings": [
+      "network",
+      "secret"
+    ],
+    "zizmor_new_findings": [
+      "excessive-permissions (medium)"
+    ],
+    "zizmor_high": false,
+    "v0_4_level": "high"
+  },
+  {
+    "case": "r03-wfx-loot-oidc-and-cleanup",
+    "title": "Workflow edited to mint cloud OIDC tokens, send all secrets out, then delete its own run",
+    "incident": "wfx-loot",
+    "date": "2026-11",
+    "source": "https://techaeris.com/2026/11/12/github-actions-attack-hits-1835-repos/",
+    "delivery": "direct push with stolen tokens, followed by 'ci: cleanup' commits",
+    "note": "Shape reconstructed from the public summary (OIDC minting, gzipped exfiltration, trace removal); exact payload not public.",
+    "pipedelta_version": "0.5.0",
+    "level": "high",
+    "blocked_at_default": true,
+    "high_findings": [
+      "cover",
+      "network",
+      "permission",
+      "secret"
+    ],
+    "zizmor_new_findings": [
+      "overprovisioned-secrets (medium)"
+    ],
+    "zizmor_high": false,
+    "v0_4_level": "high"
+  },
+  {
+    "case": "r04-prt-scan-injected-workflow",
+    "title": "New workflow added by a stolen token prints every secret, double-encoded, into the log",
+    "incident": "prt-scan",
+    "date": "2026-03",
+    "source": "https://labs.cloudsecurityalliance.org/research/csa-research-note-github-actions-prt-scan-supply-chain-2026/",
+    "delivery": "workflow created on the default branch by a pull_request_target token with write access",
+    "note": "Stage 3 of the campaign. No network call: secrets are read back from public logs.",
+    "pipedelta_version": "0.5.0",
+    "level": "high",
+    "blocked_at_default": true,
+    "high_findings": [
+      "secret"
+    ],
+    "zizmor_new_findings": [
+      "excessive-permissions (medium)",
+      "overprovisioned-secrets (medium)"
+    ],
+    "zizmor_high": false,
+    "v0_4_level": "medium"
+  },
+  {
+    "case": "r05-prt-scan-self-label",
+    "title": "Workflow that outsiders can start gains the power to add the approval label",
+    "incident": "prt-scan",
+    "date": "2026-04",
+    "source": "https://labs.cloudsecurityalliance.org/research/csa-research-note-github-actions-prt-scan-supply-chain-2026/",
+    "delivery": "pull request",
+    "note": "Models the label-gate bypass: once a pull_request_target workflow can label, the 'safe-to-test' gate can be self-applied.",
+    "pipedelta_version": "0.5.0",
+    "level": "high",
+    "blocked_at_default": true,
+    "high_findings": [
+      "permission",
+      "selfmod"
+    ],
+    "zizmor_new_findings": [],
+    "zizmor_high": false,
+    "v0_4_level": "high"
+  },
+  {
+    "case": "r06-mini-shai-hulud-oidc",
+    "title": "Workflow that outsiders can start gains OIDC identity, enabling trusted publishing",
+    "incident": "Mini Shai-Hulud",
+    "date": "2026-05",
+    "source": "https://labs.cloudsecurityalliance.org/research/csa-research-note-mini-shai-hulud-npm-supply-chain-20260516/",
+    "delivery": "pull request introducing the precondition",
+    "note": "The attack stole the runner's OIDC token and swapped it for npm publishing rights. This case is the configuration change that makes it possible.",
+    "pipedelta_version": "0.5.0",
+    "level": "high",
+    "blocked_at_default": true,
+    "high_findings": [
+      "permission"
+    ],
+    "zizmor_new_findings": [],
+    "zizmor_high": false,
+    "v0_4_level": "high"
+  },
+  {
+    "case": "r07-hackerbot-branch-injection",
+    "title": "Branch name pasted into a shell command in a pull_request_target workflow",
+    "incident": "hackerbot-claw / Trivy",
+    "date": "2026-02",
+    "source": "https://www.stephane-robert.info/en/docs/github-actions/security/supply-chain-attacks/",
+    "delivery": "pull request introducing the precondition",
+    "note": "The bot exploited branch and file names reaching run: blocks. Also the Ultralytics entry point (2024).",
+    "pipedelta_version": "0.5.0",
+    "level": "high",
+    "blocked_at_default": true,
+    "high_findings": [
+      "injection"
+    ],
+    "zizmor_new_findings": [
+      "template-injection (high)"
+    ],
+    "zizmor_high": true,
+    "v0_4_level": "high"
+  },
+  {
+    "case": "r08-ultralytics-cache",
+    "title": "Build cache turned on in a workflow that outsiders can start",
+    "incident": "Ultralytics",
+    "date": "2024-12",
+    "source": "https://blog.pypi.org/posts/2024-12-11-ultralytics-attack-analysis/",
+    "delivery": "pull request introducing the precondition",
+    "note": "The attacker poisoned the cache from a pull_request_target run; the release job restored it and shipped a cryptominer to PyPI.",
+    "pipedelta_version": "0.5.0",
+    "level": "high",
+    "blocked_at_default": true,
+    "high_findings": [
+      "cache"
+    ],
+    "zizmor_new_findings": [],
+    "zizmor_high": false,
+    "v0_4_level": "low"
+  },
+  {
+    "case": "r09-gluestack-discussion-injection",
+    "title": "Discussion title and body pasted into a shell command",
+    "incident": "gluestack-ui (CVE-2025-53104)",
+    "date": "2025-06",
+    "source": "https://www.stephane-robert.info/en/docs/github-actions/security/supply-chain-attacks/",
+    "delivery": "pull request introducing the precondition",
+    "note": "Anyone who opens a discussion containing $(...) runs code on the runner.",
+    "pipedelta_version": "0.5.0",
+    "level": "high",
+    "blocked_at_default": true,
+    "high_findings": [
+      "injection"
+    ],
+    "zizmor_new_findings": [
+      "template-injection (high)"
+    ],
+    "zizmor_high": true,
+    "v0_4_level": "high"
+  }
+]

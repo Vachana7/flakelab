@@ -229,6 +229,15 @@ def test_sample_levels_match_engine_expectations(base: str) -> None:
     assert levels["job-output"] == "high" and levels["step-output"] == "high"
 
 
+def test_attack_paths_carry_both_ends_for_the_diagram(base: str) -> None:
+    _status, body, _ = call(base, "/api/analyses", {"mode": "sample", "sample": "imitation-attack"})
+    paths = body["files"][0]["paths"]
+    assert paths
+    for path in paths:
+        assert path["first"]["kind"] and path["second"]["kind"] in {"secret", "write"}
+        assert isinstance(path["first"]["name"], str) and isinstance(path["second"]["name"], str)
+
+
 def test_delete_analysis(base: str) -> None:
     _, a, _ = call(base, "/api/analyses", {"mode": "sample", "sample": "ordinary-change"})
     assert call(base, f"/api/analyses/{a['id']}", method="DELETE")[0] == 200

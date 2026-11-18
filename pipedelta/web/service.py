@@ -144,6 +144,8 @@ def attack_paths(before: str | None, after: str | None) -> list[dict[str, Any]]:
             "level": path.level,
             "reason": path.reason,
             "jobs": list(path.jobs),
+            "first": {"kind": path.first[0], "name": path.first[1]},
+            "second": {"kind": path.second[0], "name": path.second[1]},
             "new": path in fresh,
         }
         for path in paths_in(after)

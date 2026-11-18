@@ -415,7 +415,26 @@ async function analysis(id) {
     if (!file?.paths.length) return h("div", { class: "card empty" }, h("h3", {}, "No attack paths"), "No job pairs a secret, a write token or an outside address with text an outsider controls.");
     return h("div", { class: "card" }, file.paths.map((p) => h("div", { class: "path" },
       h("div", { style: "display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap" }, badge(p.level), p.new ? h("span", { class: "badge plain" }, "Made possible by this change") : h("span", { class: "badge plain" }, "Already possible"), h("span", { class: "mono faint" }, p.jobs.join(", "))),
+      pathFlow(p),
       h("p", {}, p.reason))));
+  }
+  const ENTRY = {
+    injection: ["Outsider-controlled text", "pasted into a command"],
+    network: ["Outside address", null],
+    hidden: ["Hidden commands", "decoded and run"],
+    action: ["Unpinned outside code", null],
+    runner: ["Project's own machine", "keeps state between runs"],
+  };
+  function pathFlow(p) {
+    const [t, sub] = ENTRY[p.first.kind] || [p.first.kind, null];
+    const target = p.second.kind === "secret" ? ["Secret", p.second.name] : ["Token that can write", p.second.name];
+    const node = (cls, title, detail) => h("div", { class: "pf-node " + cls }, h("strong", {}, title), detail ? h("span", { class: "mono" }, detail) : null);
+    return h("div", { class: "pf", role: "img", "aria-label": `${t} reaches ${target[0]} ${target[1]} in the same job` },
+      node("in", t, sub || p.first.name || null),
+      h("div", { class: "pf-arrow", "aria-hidden": "true" }),
+      node("job", "Same job", p.jobs.join(", ")),
+      h("div", { class: "pf-arrow", "aria-hidden": "true" }),
+      node("out " + p.level, target[0], target[1] || null));
   }
   function diffTab(file) {
     if (!file?.diff) return h("div", { class: "card empty" }, h("h3", {}, "Nothing to compare"), "This analysis looked at one version of the file. Use “Latest change” or a pull request to compare two.");

@@ -1,0 +1,9 @@
+{
+  "title": "Action code changed to dump the runner's memory into the log",
+  "incident": "tj-actions/changed-files",
+  "date": "2025-03",
+  "source": "https://www.wiz.io/blog/github-action-tj-actions-changed-files-supply-chain-attack-cve-2025-30066",
+  "delivery": "upstream action tag moved",
+  "note": "Modelled as a diff of the action's own action.yml, which is what upstream review (roadmap) would see. Users of the action saw no change in their own files; payload simplified.",
+  "id": "r01-tj-actions-memory-dump"
+}

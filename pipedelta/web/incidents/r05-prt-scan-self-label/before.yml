@@ -1,0 +1,10 @@
+name: Triage
+on:
+  pull_request_target:
+permissions:
+  contents: read
+jobs:
+  greet:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Thanks for the pull request"

@@ -1,0 +1,9 @@
+{
+  "title": "Workflow that outsiders can start gains the power to add the approval label",
+  "incident": "prt-scan",
+  "date": "2026-04",
+  "source": "https://labs.cloudsecurityalliance.org/research/csa-research-note-github-actions-prt-scan-supply-chain-2026/",
+  "delivery": "pull request",
+  "note": "Models the label-gate bypass: once a pull_request_target workflow can label, the 'safe-to-test' gate can be self-applied.",
+  "id": "r05-prt-scan-self-label"
+}

@@ -1,0 +1,10 @@
+name: Preview
+on:
+  pull_request_target:
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Building preview"

@@ -1,0 +1,9 @@
+{
+  "title": "Workflow that outsiders can start gains OIDC identity, enabling trusted publishing",
+  "incident": "Mini Shai-Hulud",
+  "date": "2026-05",
+  "source": "https://labs.cloudsecurityalliance.org/research/csa-research-note-mini-shai-hulud-npm-supply-chain-20260516/",
+  "delivery": "pull request introducing the precondition",
+  "note": "The attack stole the runner's OIDC token and swapped it for npm publishing rights. This case is the configuration change that makes it possible.",
+  "id": "r06-mini-shai-hulud-oidc"
+}

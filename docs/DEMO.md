@@ -109,8 +109,14 @@ built from variables. It is meant to help a human reviewer, not replace one.
 
 **How is it different from existing scanners such as zizmor?** Those tools
 report problems in a workflow file as it is. PipeDelta reports what a change
-added, in plain sentences. They can be used together. I have not found a tool
-that reports changes this way, but I cannot say for certain that none exists.
+added, in plain sentences. They can be used together. Comparing a base and a head
+version of a workflow is not new: a tool called ci-delta (npm) already does that
+and posts a pull request comment. From its public description I understand it
+flags changes such as new triggers, wider token permissions and unpinned
+actions; I have not run it, and I have not found a mention of effective
+permissions or of following outsider text between jobs and steps. That
+combination is what PipeDelta adds, but I have not compared the two on the
+same cases, so I cannot say which finds more.
 
 **How do you know the levels are right?** They are hand-written rules, and I
 measured them two ways (`docs/EVALUATION.md`). On 12 attack cases that I

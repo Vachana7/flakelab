@@ -58,7 +58,8 @@ This section is from general knowledge of the tool categories and from the proje
 | Dependency update tools (for example Dependabot) | Keep actions and packages up to date | Different job. PipeDelta reviews the change itself |
 | Runtime monitoring of runners (for example StepSecurity Harden-Runner) | Watch network and process activity while the pipeline runs | PipeDelta works before the change is accepted, by reading files only |
 
-**Where PipeDelta aims to be different:** change-focused, plain-language, evidence with the line, ranked by combination with what is already in the job, and usable locally with a small, dependency-light code base.
+**Closest existing tool:** ci-delta (npm) also compares a base and a head workflow and posts a pull request comment, so being change-focused is not unique. From its public description (not tested here) it checks fixed rules such as triggers, permissions and pinning.
+**What PipeDelta aims to add:** effective token permissions, combination of a new capability with what is already in the job, outsider text followed through job and step outputs, evidence with the line, and local use with a small, dependency-light code base. None of this has been compared against ci-delta or zizmor on shared cases.
 **Where it is weaker, honestly:** it reads workflow files only, has no runtime view, covers fewer rule types than mature scanners, is rule-based with limited tuning data, and has not been tested with real reviewers.
 
 ## 9. Limitations

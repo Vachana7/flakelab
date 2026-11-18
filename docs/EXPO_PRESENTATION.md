@@ -39,7 +39,7 @@ Say: "On 12 attack cases I reconstructed from public reports, it blocks 8, which
 ## Questions experts are likely to ask
 
 **How is it different from zizmor, actionlint or other scanners?**
-"As far as I know, those tools analyse a workflow as it is, and report problems in it. PipeDelta reports what a *change* added, in plain sentences, with evidence. They can be used together. I have not compared them on the same cases, so I cannot say which finds more."
+"As far as I know, those tools analyse a workflow as it is, and report problems in it. PipeDelta reports what a *change* added, in plain sentences, with evidence. They can be used together. Comparing a base and a head workflow is not unique to PipeDelta: ci-delta already does a change comparison. From its public description it does not follow outsider text between jobs and steps or work out effective permissions, which PipeDelta does. I have not run it or zizmor on the same cases, so I cannot say which finds more."
 
 **Does it catch every attack?** "No. It reads workflow files only. It does not look inside the outside actions or scripts a workflow calls. It cannot see attacks that change no workflow file, such as a moved version tag. It misses addresses built from variables. It is meant to help a reviewer, not replace one."
 

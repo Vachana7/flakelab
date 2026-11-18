@@ -45,3 +45,24 @@ def upsert_comment(repo: str, pr_number: int, token: str, body: str) -> str:
         return "created"
     except (urllib.error.URLError, OSError, ValueError, KeyError) as error:
         return f"skipped: {error}"
+
+
+def resolve_sha(action: str, token: str) -> str | None:
+    """The commit id that an action's version tag points to now, or None.
+
+    "owner/repo/sub/path@v4" -> commit of tag v4 in owner/repo.
+    """
+    name, _, ref = action.partition("@")
+    parts = name.split("/")
+    if len(parts) < 2 or not ref or name.startswith("docker://"):
+        return None
+    url = f"{API}/repos/{parts[0]}/{parts[1]}/commits/{ref}"
+    request = urllib.request.Request(url)
+    request.add_header("Authorization", f"Bearer {token}")
+    request.add_header("Accept", "application/vnd.github.sha")
+    try:
+        with urllib.request.urlopen(request, timeout=20) as response:
+            sha = response.read().decode().strip()
+    except (urllib.error.URLError, OSError, ValueError):
+        return None
+    return sha if len(sha) == 40 and all(c in "0123456789abcdef" for c in sha) else None

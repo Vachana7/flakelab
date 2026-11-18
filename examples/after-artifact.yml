@@ -1,0 +1,18 @@
+# Uploads the whole checkout as an artifact. actions/checkout leaves the
+# pipeline token in .git/config, so the token leaks with it (the "ArtiPACKED"
+# pattern). PipeDelta's own rules miss this; with --zizmor on, zizmor's
+# artipacked audit catches it and PipeDelta explains it in plain words.
+name: CI
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -m pytest
+      - uses: actions/upload-artifact@v4
+        with:
+          name: workdir
+          path: .

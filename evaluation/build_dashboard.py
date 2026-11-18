@@ -68,6 +68,25 @@ def attack_rows(a1, a2) -> str:
     return "\n".join(out)
 
 
+def comparison_rows(rows) -> tuple[str, str]:
+    good = {"blocked", "flagged"}
+
+    def cell(value: str) -> str:
+        cls = "st-ok" if value in good else "st-na" if value == "cannot see" else "st-miss"
+        return f'<td class="st {cls}">{esc(value)}</td>'
+
+    out = []
+    for r in rows:
+        cells = "".join(cell(r[t]) for t in ("pipedelta", "zizmor", "poutine", "combined"))
+        out.append(f"<tr><td>{esc(r['case'][:2])}</td><td>{esc(r['title'])}</td>{cells}</tr>")
+    totals = "".join(
+        f"<td><b>{sum(r[t] in good for r in rows)} of {len(rows)}</b></td>"
+        for t in ("pipedelta", "zizmor", "poutine", "combined")
+    )
+    out.append(f'<tr class="total"><td></td><td>Total</td>{totals}</tr>')
+    return "\n".join(out), str(sum(r["combined"] in good for r in rows))
+
+
 def bars(history) -> str:
     out = []
     for r in history:
@@ -106,8 +125,9 @@ def history_table(history) -> str:
 
 
 def main() -> None:
-    a1, a2 = load("attacks-v0.1.json"), load("attacks-v0.3.json")
-    h1, h2 = load("history-v0.1.json"), load("history-v0.3.json")
+    a1, a2 = load("attacks-v0.1.json"), load("attacks-v0.4.json")
+    h1, h2 = load("history-v0.1.json"), load("history-v0.4.json")
+    cmp = load("comparison-v0.4.json")["cases"]
 
     def blocked(rows):
         vis = [r for r in rows if r["visible"]]
@@ -132,6 +152,8 @@ def main() -> None:
         for k, v in sorted(reasons.items(), key=lambda kv: -kv[1])
     )
     items, count = findings_block()
+    cmp_rows, combined = comparison_rows(cmp)
+    zt = sum(r.get("zizmor_levels", {}).get("high", 0) for r in h2)
     legend = "".join(f'<span><i class="seg-{k}"></i>{LABEL[k]}</span>' for k in LEVELS)
 
     page = TEMPLATE
@@ -154,6 +176,10 @@ def main() -> None:
         "LEGEND": legend,
         "HTABLE": history_table(h2),
         "REASONS": reason_rows,
+        "CMP": cmp_rows,
+        "COMBINED": combined,
+        "ZH": zt,
+        "ZP": f"{100 * zt / n2:.1f}",
     }.items():
         page = page.replace("{{" + key + "}}", str(value))
     (ROOT / "dashboard" / "index.html").write_text(page)
@@ -258,10 +284,10 @@ footer{margin-top:56px;color:var(--ink2);font-size:.88rem}
 <p class="muted">This example is a harmless imitation. The action and the address in it do not exist. The report on the right is the tool's real output for the change on the left.</p>
 
 <h2>How well does it work?</h2>
-<p>Two separate tests. Version 0.3 was written after looking at the version 0.1 results, so its attack score is not independent evidence.</p>
+<p>Three separate tests. Later versions were written after looking at the version 0.1 results, so their attack scores are not independent evidence.</p>
 <div class="tiles">
   <div class="tile"><b>{{B1}} of {{NV}}</b><span>attack cases blocked by the first version, written before any testing</span></div>
-  <div class="tile"><b>{{B2}} of {{NV}}</b><span>blocked by version 0.3, after two rules were added for the misses and bugs were fixed</span></div>
+  <div class="tile"><b>{{B2}} of {{NV}}</b><span>blocked by version {{VERSION}}, after rules were added for misses and two code reviews</span></div>
   <div class="tile"><b>{{P2}}%</b><span>of {{N2}} real past pipeline changes would have been blocked ({{P1}}% in the first version)</span></div>
 </div>
 
@@ -269,12 +295,24 @@ footer{margin-top:56px;color:var(--ink2);font-size:.88rem}
 <p>{{NALL}} cases written for this project from public reports of real attacks, with placeholder addresses. They are not the original malicious files. In two of them nothing changes in the victim's workflow file, so no tool of this kind can see them.</p>
 <div class="card">
 <table>
-<thead><tr><th>#</th><th>Case</th><th>Version 0.1</th><th>Version 0.3</th></tr></thead>
+<thead><tr><th>#</th><th>Case</th><th>Version 0.1</th><th>Version {{VERSION}}</th></tr></thead>
 <tbody>
 {{ATTACKS}}
 </tbody>
 </table>
 </div>
+
+<h2>Test 3: the same cases with zizmor and poutine</h2>
+<p>Each tool scans the file before and after the change and gets credit only for a <em>new</em> problem at its top severity. These cases were written by PipeDelta's author, so this test favours PipeDelta. The point is the pattern: established scanners look for known weak patterns; they do not ask whether a change starts sending a secret somewhere new, which is how the 2025 and 2026 secret-theft campaigns worked.</p>
+<div class="card">
+<table>
+<thead><tr><th>#</th><th>Case</th><th>PipeDelta</th><th>zizmor</th><th>poutine</th><th>PipeDelta + zizmor</th></tr></thead>
+<tbody>
+{{CMP}}
+</tbody>
+</table>
+</div>
+<p class="muted">With <code>--zizmor on</code>, PipeDelta runs zizmor on both versions, keeps only its new results and explains them in plain words: together they block {{COMBINED}} of {{NALL}}. On the real history below, zizmor alone would have raised a new High result on {{ZH}} commits ({{ZP}}%), mostly version bumps of actions not locked to a commit.</p>
 
 <h2>Test 2: real pipeline history of eight projects</h2>
 <p>Every past commit that changed a workflow file in eight well-known Python projects, replayed through PipeDelta {{VERSION}}. Each bar shows how those commits were rated. Only git history was read.</p>
@@ -289,7 +327,7 @@ footer{margin-top:56px;color:var(--ink2);font-size:.88rem}
 </div>
 <p>These commits are not labelled, so {{P2}}% is a block rate, not a false-alarm rate. None of them is a known attack. About one in ten is too many for a strict gate on a busy project; today the tool fits best as an advisory comment.</p>
 <div class="card">
-<table class="num"><thead><tr><th>Why commits were blocked (high-level findings, version 0.3)</th><th>Findings</th></tr></thead>
+<table class="num"><thead><tr><th>Why commits were blocked (high-level findings, version {{VERSION}})</th><th>Findings</th></tr></thead>
 <tbody>
 {{REASONS}}
 </tbody></table>
@@ -297,11 +335,11 @@ footer{margin-top:56px;color:var(--ink2);font-size:.88rem}
 
 <h2>What it cannot do</h2>
 <ul class="plain">
-<li>It reads workflow files only. It does not look inside the outside actions or scripts a workflow calls.</li>
-<li>It misses internet addresses that are built from variables.</li>
+<li>It reads workflow files and the actions stored in the repository. It does not look inside outside actions or the scripts a step runs.</li>
+<li>An address built from variables is reported as "only known at run time", not by name.</li>
 <li>It cannot see attacks that change no workflow file, such as a moved version tag.</li>
 <li>A pull request that removes the PipeDelta check can switch it off unless the check is marked as required.</li>
-<li>It has not been compared against existing scanners on the same cases.</li>
+<li>It has been compared with zizmor and poutine only on its own attack cases, not on cases written by someone else.</li>
 </ul>
 
 <footer>PipeDelta {{VERSION}}. Numbers on this page are generated from <code>evaluation/results/</code> by <code>evaluation/build_dashboard.py</code>. Method and limits: <code>docs/EVALUATION.md</code>.</footer>

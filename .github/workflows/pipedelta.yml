@@ -6,7 +6,10 @@ name: PipeDelta
 on:
   pull_request:
     paths:
-      - ".github/workflows/**"
+      - ".github/**"
+      - ".pipedelta.yml"
+      - "**/action.yml"
+      - "**/action.yaml"
 
 permissions:
   contents: read

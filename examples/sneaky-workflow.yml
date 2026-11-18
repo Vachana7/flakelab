@@ -1,0 +1,14 @@
+# Looks like a harmless refactor: the setup steps "moved into a shared action".
+# Version 0.3 of PipeDelta reported "no new powers" for this, because it never
+# read the action file. Pair it with examples/sneaky-action.yml.
+name: CI
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: python -m pytest

@@ -52,6 +52,29 @@ Say: "The comment is not a new one. The tool edits its earlier report, so the
 reviewer always sees the current state. And it is still blocked, which is
 correct: I removed the theft, but the pipeline still has more power than it needs."
 
+## Scene 4 (optional, 1 minute): the attack that hides
+
+Use this when an examiner asks "what if the attacker is smarter?". Run it in a
+terminal (or `docker compose run --rm sneaky`):
+
+    python -m pipedelta diff examples/before.yml examples/sneaky-workflow.yml
+    python -m pipedelta diff - examples/sneaky-action.yml
+
+Say: "Here the workflow change looks like a harmless refactor: the setup steps
+moved into a shared action in the repository. The first line is all the reviewer
+sees in the workflow. But PipeDelta also reads the new action file, and there it
+finds a decoded hidden command and a new internet address. An earlier version of my
+tool missed exactly this, which I found in a code review and fixed."
+
+## Scene 5 (optional, 1 minute): a second opinion from zizmor
+
+    python -m pipedelta diff examples/before.yml examples/after-artifact.yml --zizmor on
+
+Say: "My own rules miss this one: uploading the whole folder leaks the token that
+checkout stored. zizmor, an established scanner, catches it. PipeDelta runs zizmor
+on the old and new file, keeps only what is new, and explains it in the same plain
+words. Where both tools agree, the report says so."
+
 ## After the demo: reset
 
 Close both pull requests without merging and delete their branches (GitHub
@@ -89,21 +112,36 @@ requests.
 unless the repository owner marks the check as required in branch settings.
 This is written in the README under known limits.
 
-**Does it catch every attack?** No. It reads workflow files only. It does not
-look inside the outside actions a workflow calls, and it misses addresses
-built from variables. It is meant to help a human reviewer, not replace one.
+**Does it catch every attack?** No. It reads workflow files and the actions
+stored in the repository, but not outside actions or scripts that a step runs. An
+address built from variables is reported only as "known at run time". Attacks that
+change no file, such as a hijacked version tag, cannot be seen by any tool of this
+kind. It is meant to help a human reviewer, not replace one.
 
-**How is it different from existing scanners such as zizmor?** Those tools
-report problems in a workflow file as it is. PipeDelta reports what a change
-added, in plain sentences. They can be used together. I have not found a tool
-that reports changes this way, but I cannot say for certain that none exists.
+**Can a pull request add itself to the trust list?** No. The trust list
+(`.pipedelta.yml`) is read from the target branch, not from the pull request, and a
+pull request that widens it is reported.
+
+**How is it different from existing scanners such as zizmor?** zizmor and
+poutine look for known weak patterns in a workflow as it is. PipeDelta reports
+what a change added, in plain sentences, and combines signals: a secret and a new
+address in the same job. I ran all three on the same 12 cases, counting only
+problems that are new in the change: PipeDelta 9, zizmor 5, poutine 2, PipeDelta
+with zizmor 10. Say straight away that the cases are mine, so the test favours my
+tool; the useful finding is that zizmor and poutine do not flag the secret-theft
+cases (01, 02, 03, 10), while zizmor catches one PipeDelta misses (11). That is why
+PipeDelta can run zizmor as a second opinion.
 
 **How do you know the levels are right?** They are hand-written rules, and I
-measured them two ways (`docs/EVALUATION.md`). On 12 attack cases that I
+measured them three ways (`docs/EVALUATION.md`). On 12 attack cases that I
 reconstructed from public reports, the first version blocked 6 of the 10 where
-a workflow file changes; after I added two rules for the misses it blocked 8,
-but that second number is not independent because I adjusted the tool to those
-cases. On 1,659 real past workflow commits from eight Python projects, it
-would have blocked about one in ten, mostly for outside actions that were not
-locked to a commit. That is too noisy for a strict gate on a busy project, so
-today it fits best as an advisory comment.
+a workflow file changes; after I added rules for the misses it blocks 9, but
+that number is not independent because I adjusted the tool to those cases. On
+1,659 real past workflow commits from eight Python projects, it would have
+blocked about one in eleven, mostly for outside actions that were not locked to a
+commit; zizmor alone would have raised a new High result on about one in three.
+For teams that do not lock actions yet, a trust list or comment-only mode fits better.
+
+**What would you do next?** Test on workflow files written by someone else (for
+example zizmor's own test cases), label a sample of the blocked commits by hand
+to get a real false-alarm rate, and follow scripts that a step runs.

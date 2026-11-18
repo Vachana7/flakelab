@@ -2,6 +2,9 @@
 
 Usage: python evaluation/run_history.py OUT.json REPO_DIR [REPO_DIR ...]
 Only reads git history. Does not run any code from the repositories.
+
+If zizmor is installed, each commit is also judged by zizmor alone (any new
+High result) and by PipeDelta with zizmor's new results merged in.
 """
 
 from __future__ import annotations
@@ -14,6 +17,7 @@ from pathlib import Path
 
 import yaml
 
+from pipedelta import zizmor
 from pipedelta.delta import compare, overall
 
 WF = ".github/workflows/"
@@ -34,6 +38,9 @@ def study(repo: str) -> dict[str, object]:
     head = git(repo, "rev-parse", "HEAD").stdout.strip()
     commits = git(repo, "log", "--no-merges", "--format=%H", "--", WF).stdout.split()
     levels: Counter[str] = Counter()
+    zizmor_levels: Counter[str] = Counter()
+    combined_levels: Counter[str] = Counter()
+    use_zizmor = zizmor.available()
     high_reasons: Counter[str] = Counter()
     unreadable = 0
     crashed = 0
@@ -58,12 +65,20 @@ def study(repo: str) -> dict[str, object]:
             else:
                 break
         findings = []
+        z_findings = []
+        combined = []
         bad = False
         for old_path, path in pairs:
             if not path.endswith((".yml", ".yaml")):
                 continue
             try:
-                findings += compare(show(repo, parent, old_path), show(repo, commit, path))
+                old_text, new_text = show(repo, parent, old_path), show(repo, commit, path)
+                own = compare(old_text, new_text)
+                findings += own
+                if use_zizmor:
+                    extra = zizmor.new_findings(old_text, new_text, path)
+                    z_findings += [f for _i, _j, f in extra]
+                    combined += zizmor.merge(own, extra)
             except yaml.YAMLError:
                 bad = True
             except Exception:  # noqa: BLE001 - a bug in PipeDelta; count it honestly
@@ -74,6 +89,9 @@ def study(repo: str) -> dict[str, object]:
             continue
         level = overall(findings)
         levels[level] += 1
+        if use_zizmor:
+            zizmor_levels[overall(z_findings)] += 1
+            combined_levels[overall(combined)] += 1
         if level == "high":
             for f in findings:
                 if f.level == "high":
@@ -94,6 +112,8 @@ def study(repo: str) -> dict[str, object]:
         "unreadable": unreadable,
         "crashed": crashed,
         "levels": dict(levels),
+        "zizmor_levels": dict(zizmor_levels),
+        "combined_levels": dict(combined_levels),
         "high_reasons": dict(high_reasons),
     }
 
@@ -102,8 +122,12 @@ def main(out: str, repos: list[str]) -> None:
     rows = [study(r) for r in repos]
     Path(out).write_text(json.dumps(rows, indent=2) + "\n")
     total: Counter[str] = Counter()
+    z_total: Counter[str] = Counter()
+    c_total: Counter[str] = Counter()
     for r in rows:
         total.update(r["levels"])  # type: ignore[arg-type]
+        z_total.update(r["zizmor_levels"])  # type: ignore[arg-type]
+        c_total.update(r["combined_levels"])  # type: ignore[arg-type]
         print(
             r["repo"],
             r["workflow_commits"],
@@ -120,6 +144,8 @@ def main(out: str, repos: list[str]) -> None:
         dict(total),
         f"blocked at default: {total['high']}/{n} = {total['high'] / n:.1%}",
     )
+    if sum(z_total.values()):
+        print("zizmor alone, new High:", z_total["high"], "combined:", c_total["high"])
 
 
 if __name__ == "__main__":

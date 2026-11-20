@@ -1,0 +1,20 @@
+# The PipeDelta web dashboard, for hosting online (Render, Railway, Fly, etc.).
+# The plain Dockerfile stays the GitHub Action image; this one runs `pipedelta serve`.
+FROM python:3.12-slim
+
+WORKDIR /opt/pipedelta
+COPY pyproject.toml README.md ./
+COPY pipedelta ./pipedelta
+RUN pip install --no-cache-dir . && useradd --create-home pipedelta
+
+USER pipedelta
+
+# Hosting platforms tell the app which port to use in $PORT (Render uses 10000).
+# The history database goes in /tmp, which is always writable; it is reset
+# whenever the service restarts, which is fine for a demo.
+ENV PORT=10000 PIPEDELTA_DB=/tmp/pipedelta.db PYTHONUNBUFFERED=1
+EXPOSE 10000
+
+# RENDER_EXTERNAL_HOSTNAME is picked up automatically. On another platform,
+# set PIPEDELTA_ALLOWED_HOSTS to the public host name (or * for any).
+CMD ["sh", "-c", "exec pipedelta serve --host 0.0.0.0 --port \"$PORT\" --db \"$PIPEDELTA_DB\""]

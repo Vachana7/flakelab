@@ -3,7 +3,8 @@
 Security choices (each has a test in tests/test_web_api.py):
 
 * binds to 127.0.0.1 by default;
-* the ``Host`` header must be a local name, which stops DNS-rebinding pages;
+* the ``Host`` header must be a local name (or one named with ``--allow-host``),
+  which stops DNS-rebinding pages;
 * a write must be ``application/json`` and, if it names an ``Origin``, the
   same origin as the page, which stops other websites from posting to it;
 * the GitHub token is read from the server's environment and never appears in
@@ -108,12 +109,15 @@ def make_server(
         def _check_host(self) -> None:
             header = (self.headers.get("Host") or "").lower()
             host = header.split("]")[0] + "]" if header.startswith("[") else header.split(":")[0]
-            if host not in allowed:
+            if "*" not in allowed and host not in allowed:
                 raise HttpError(403, "bad_host", "This server only answers to localhost.")
 
         def _check_write(self) -> None:
             origin = self.headers.get("Origin")
-            if origin and origin != f"http://{self.headers.get('Host')}":
+            # Behind a hosting platform the page is served over https, so the
+            # browser's Origin is https://<Host> while the request reaches us as http.
+            host = self.headers.get("Host")
+            if origin and origin not in (f"http://{host}", f"https://{host}"):
                 raise HttpError(403, "bad_origin", "Requests from other websites are refused.")
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 raise HttpError(
@@ -334,8 +338,8 @@ def make_server(
     return ThreadingHTTPServer((host, port), Handler)
 
 
-def serve(host: str, port: int, db_path: str) -> int:
-    server = make_server(host, port, db_path)
+def serve(host: str, port: int, db_path: str, extra_hosts: set[str] | None = None) -> int:
+    server = make_server(host, port, db_path, extra_hosts=extra_hosts)
     where = f"http://{host}:{server.server_address[1]}"
     token = (
         "set"
@@ -344,6 +348,8 @@ def serve(host: str, port: int, db_path: str) -> int:
     )
     print(f"PipeDelta {__version__} is running at {where}")
     print(f"GitHub token: {token}.  History: {db_path}.  Press Ctrl+C to stop.")
+    if extra_hosts:
+        print(f"Also answering to: {', '.join(sorted(extra_hosts))}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

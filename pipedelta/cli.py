@@ -139,6 +139,13 @@ def main(argv: list[str] | None = None) -> int:
     w.add_argument("--host", default="127.0.0.1")
     w.add_argument("--port", type=int, default=8765)
     w.add_argument("--db", default="pipedelta.db", help="where analysis history is kept")
+    w.add_argument(
+        "--allow-host",
+        action="append",
+        default=[],
+        metavar="NAME",
+        help="also answer to this host name, e.g. when hosted online (repeatable; * allows any)",
+    )
 
     for p in (d, g, a):  # the three commands that gate a change
         p.add_argument(
@@ -152,7 +159,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "serve":
         from .web.server import serve
 
-        return serve(args.host, args.port, args.db)
+        return serve(args.host, args.port, args.db, _allowed_hosts(args.allow_host))
     results: dict[str, list[Finding]] = {}
 
     try:
@@ -173,6 +180,14 @@ def main(argv: list[str] | None = None) -> int:
 
     print(render_text(results))
     return _exit_code(results, args.fail_on)
+
+
+def _allowed_hosts(names: list[str]) -> set[str]:
+    """Host names from --allow-host, PIPEDELTA_ALLOWED_HOSTS and, on Render, the
+    service's own public name, so a hosted dashboard answers to its URL."""
+    found = list(names) + os.environ.get("PIPEDELTA_ALLOWED_HOSTS", "").split(",")
+    found.append(os.environ.get("RENDER_EXTERNAL_HOSTNAME", ""))
+    return {name.strip().lower() for name in found if name.strip()}
 
 
 if __name__ == "__main__":

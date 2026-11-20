@@ -1,0 +1,16 @@
+# Render Blueprint: one free Docker web service running the PipeDelta dashboard.
+# On render.com: New > Blueprint > pick this repository > Apply.
+services:
+  - type: web
+    name: pipedelta
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile.web
+    dockerContext: .
+    autoDeploy: true
+    envVars:
+      # Optional. Leave unset for public repositories only (60 GitHub requests/hour).
+      # If you set one, use a fine-grained token with read-only access to public
+      # repositories: everyone who opens the public link uses it.
+      - key: GITHUB_TOKEN
+        sync: false

@@ -261,7 +261,9 @@ def test_allowed_public_host_and_https_origin() -> None:
     """A hosted dashboard answers to its public name, and the browser's https
     Origin for that same name is accepted; other sites are still refused."""
     server = make_server(
-        port=0, github=FakeGitHub(), extra_hosts={"demo.onrender.com"}  # type: ignore[arg-type]
+        port=0,
+        github=FakeGitHub(),  # type: ignore[arg-type]
+        extra_hosts={"demo.onrender.com"},
     )
     threading.Thread(target=server.serve_forever, daemon=True).start()
     base = f"http://127.0.0.1:{server.server_address[1]}"
@@ -295,5 +297,8 @@ def test_allowed_hosts_from_environment(monkeypatch: pytest.MonkeyPatch) -> None
     monkeypatch.setenv("RENDER_EXTERNAL_HOSTNAME", "Demo.onrender.com")
     monkeypatch.setenv("PIPEDELTA_ALLOWED_HOSTS", "a.example, b.example")
     assert _allowed_hosts(["c.example"]) == {
-        "demo.onrender.com", "a.example", "b.example", "c.example"
+        "demo.onrender.com",
+        "a.example",
+        "b.example",
+        "c.example",
     }
